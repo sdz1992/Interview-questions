@@ -652,4 +652,316 @@
 
 >solution4_Sum<100>::N就是1+2+...+100的结果。当编译器看到solution4_Sum<100>时，就是为模板类solution4_Sum以参数100生成该类型的代码。但以100为参数的类型需要得到以99为参数的类型，因为solution4_Sum<100>::N=solution4_Sum<99>::N+100。这个过程会递归一直到参数为1的类型，由于该类型已经显式定义，编译器无需生成，递归编译到此结束。由于这个过程是在编译过程中完成的，因此要求输入n必须是在编译期间就能确定，不能动态输入。这是该方法最大的缺点。而且编译器对递归编译代码的递归深度是有限制的，也就是要求n不能太大。
 
+### 9.查找链表中倒数第k个结点
+###### 题目：输入一个单向链表，输出该链表中倒数第k个结点。链表的倒数第0个结点为链表的尾指针。链表结点定义如下： 
+        struct ListNode
+        {
+        	int       m_nKey;
+        	ListNode* m_pNext;
+        };
+>分析：为了得到倒数第k个结点，很自然的想法是先走到链表的尾端，再从尾端回溯k步。可是输入的是单向链表，只有从前往后的指针而没有从后往前的指针。因此我们需要打开我们的思路。
+既然不能从尾结点开始遍历这个链表，我们还是把思路回到头结点上来。假设整个链表有n个结点，那么倒数第k个结点是从头结点开始的第n-k-1个结点（从0开始计数）。如果我们能够得到链表中结点的个数n，那我们只要从头结点开始往后走n-k-1步就可以了。如何得到结点数n？这个不难，只需要从头开始遍历链表，每经过一个结点，计数器加一就行了。
+>>这种思路的时间复杂度是O(n)，但需要遍历链表两次。第一次得到链表中结点个数n，第二次得到从头结点开始的第n¬-k-1个结点即倒数第k个结点。
+>>>如果链表的结点数不多，这是一种很好的方法。但如果输入的链表的结点个数很多，有可能不能一次性把整个链表都从硬盘读入物理内存，那么遍历两遍意味着一个结点需要两次从硬盘读入到物理内存。我们知道把数据从硬盘读入到内存是非常耗时间的操作。我们能不能把链表遍历的次数减少到1？如果可以，将能有效地提高代码执行的时间效率。
+>>>>如果我们在遍历时维持两个指针，第一个指针从链表的头指针开始遍历，在第k-1步之前，第二个指针保持不动；在第k-1步开始，第二个指针也开始从链表的头指针开始遍历。由于两个指针的距离保持在k-1，当第一个（走在前面的）指针到达链表的尾结点时，第二个指针（走在后面的）指针正好是倒数第k个结点。
+>>>>>这种思路只需要遍历链表一次。对于很长的链表，只需要把每个结点从硬盘导入到内存一次。因此这一方法的时间效率前面的方法要高。
+
+- 思路一的参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find the kth node from the tail of a list
+        // Input: pListHead - the head of list
+        //        k         - the distance to the tail
+        // Output: the kth node from the tail of a list
+        ///////////////////////////////////////////////////////////////////////
+        ListNode* FindKthToTail_Solution1(ListNode* pListHead, unsigned int k)
+        {
+        	if(pListHead == NULL)
+        		return NULL;
+        
+        	// count the nodes number in the list
+        	ListNode *pCur = pListHead;
+        	unsigned int nNum = 0;
+        	while(pCur->m_pNext != NULL)
+        	{
+        		pCur = pCur->m_pNext;
+        		nNum ++;
+        	}
+        
+        	// if the number of nodes in the list is less than k
+        	// do nothing
+        	if(nNum < k)
+        		return NULL;
+        
+        	// the kth node from the tail of a list 
+        	// is the (n - k)th node from the head
+        	pCur = pListHead;
+        	for(unsigned int i = 0; i < nNum - k; ++ i)
+        		pCur = pCur->m_pNext;
+        
+        	return pCur;
+        }
+
+- 思路二的参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find the kth node from the tail of a list
+        // Input: pListHead - the head of list
+        //        k         - the distance to the tail
+        // Output: the kth node from the tail of a list
+        ///////////////////////////////////////////////////////////////////////
+        ListNode* FindKthToTail_Solution2(ListNode* pListHead, unsigned int k)
+        {
+        	if(pListHead == NULL)
+        		return NULL;
+        
+        	ListNode *pAhead = pListHead;
+        	ListNode *pBehind = NULL;
+        
+        	for(unsigned int i = 0; i < k; ++ i)
+        	{
+        		if(pAhead->m_pNext != NULL)
+        			pAhead = pAhead->m_pNext;
+        		else
+        		{
+        			// if the number of nodes in the list is less than k, 
+        			// do nothing
+        			return NULL;
+        		}
+        	}
+        
+        	pBehind = pListHead;
+        
+        	// the distance between pAhead and pBehind is k
+        	// when pAhead arrives at the tail, p
+        	// Behind is at the kth node from the tail
+        	while(pAhead->m_pNext != NULL)
+        	{
+        		pAhead = pAhead->m_pNext;
+        		pBehind = pBehind->m_pNext;
+        	}
+
+        	return pBehind;
+        }
+
+>讨论：这道题的代码有大量的指针操作。在软件开发中，错误的指针操作是大部分问题的根源。因此每个公司都希望程序员在操作指针时有良好的习惯，比如使用指针之前判断是不是空指针。这些都是编程的细节，但如果这些细节把握得不好，很有可能就会和心仪的公司失之交臂。
+>>另外，这两种思路对应的代码都含有循环。含有循环的代码经常出的问题是在循环结束条件的判断。是该用小于还是小于等于？是该用k还是该用k-1？由于题目要求的是从0开始计数，而我们的习惯思维是从1开始计数，因此首先要想好这些边界条件再开始编写代码，再者要在编写完代码之后再用边界值、边界值减1、边界值加1都运行一次（在纸上写代码就只能在心里运行了）。
+>>>扩展：和这道题类似的题目还有：输入一个单向链表。如果该链表的结点数为奇数，输出中间的结点；如果链表结点数为偶数，输出中间两个结点前面的一个。如果各位感兴趣，请自己分析并编写代码。
+
+### 在排序数组中查找和为给定值的两个数字
+######题目：输入一个已经按升序排序过的数组和一个数字，在数组中查找两个数，使得它们的和正好是输入的那个数字。要求时间复杂度是O(n)。如果有多对数字的和等于输入的数字，输出任意一对即可。
+        例如输入数组1、2、4、7、11、15和数字15。由于4+11=15，因此输出4和11。
+>分析：如果我们不考虑时间复杂度，最简单想法的莫过去先在数组中固定一个数字，再依次判断数组中剩下的n-1个数字与它的和是不是等于输入的数字。可惜这种思路需要的时间复杂度是O(n2)。
+>>我们假设现在随便在数组中找到两个数。如果它们的和等于输入的数字，那太好了，我们找到了要找的两个数字；如果小于输入的数字呢？我们希望两个数字的和再大一点。由于数组已经排好序了，我们是不是可以把较小的数字的往后面移动一个数字？因为排在后面的数字要大一些，那么两个数字的和也要大一些，就有可能等于输入的数字了；同样，当两个数字的和大于输入的数字的时候，我们把较大的数字往前移动，因为排在数组前面的数字要小一些，它们的和就有可能等于输入的数字了。
+>>>我们把前面的思路整理一下：最初我们找到数组的第一个数字和最后一个数字。当两个数字的和大于输入的数字时，把较大的数字往前移动；当两个数字的和小于数字时，把较小的数字往后移动；当相等时，打完收工。这样扫描的顺序是从数组的两端向数组的中间扫描。
+>>>>问题是这样的思路是不是正确的呢？这需要严格的数学证明。感兴趣的读者可以自行证明一下。
+
+- 参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find two numbers with a sum in a sorted array
+        // Output: ture is found such two numbers, otherwise false
+        ///////////////////////////////////////////////////////////////////////
+        bool FindTwoNumbersWithSum
+        (
+        	int data[],           // a sorted array
+        	unsigned int length,  // the length of the sorted array   	
+        	int sum,              // the sum
+        	int& num1,            // the first number, output
+        	int& num2             // the second number, output
+        )
+        {
+        	bool found = false;
+        	if(length < 1)
+        		return found;
+        
+        	int ahead = length - 1;
+        	int behind = 0;
+        
+        	while(ahead > behind)
+        	{
+        		long long curSum = data[ahead] + data[behind];
+        
+        		// if the sum of two numbers is equal to the input
+        		// we have found them
+        		if(curSum == sum)
+        		{
+        			num1 = data[behind];
+        			num2 = data[ahead];
+        			found = true;
+        			break;
+        		}
+        		// if the sum of two numbers is greater than the input
+        		// decrease the greater number
+        		else if(curSum > sum)
+        			ahead --;
+        		// if the sum of two numbers is less than the input
+        		// increase the less number
+        		else
+        			behind ++;
+        	}
+        
+        	return found;
+        }
+
+>扩展：如果输入的数组是没有排序的，但知道里面数字的范围，其他条件不变，如和在O(n)时间里找到这两个数字？
+
+### 11.求二元查找树的镜像
+###### 题目：输入一颗二元查找树，将该树转换为它的镜像，即在转换后的二元查找树中，左子树的结点都大于右子树的结点。用递归和循环两种方法完成树的镜像转换。 
+        例如输入：
+             8
+            /  \
+          6      10
+         /\       /\
+        5  7    9   11
+        输出：
+              8
+            /  \
+          10    6
+         /\      /\
+        11  9  7  5
+        定义二元查找树的结点为：
+        struct BSTreeNode // a node in the binary search tree (BST)
+        {
+        	int          m_nValue; // value of node
+        	BSTreeNode  *m_pLeft;  // left child of node
+        	BSTreeNode  *m_pRight; // right child of node
+        };
+>分析：尽管我们可能一下子不能理解镜像是什么意思，但上面的例子给我们的直观感觉，就是交换结点的左右子树。我们试着在遍历例子中的二元查找树的同时来交换每个结点的左右子树。遍历时首先访问头结点8，我们交换它的左右子树得到：
+
+              8
+            /  \
+          10    6
+         /\      /\
+        9  11  5  7
+>我们发现两个结点6和10的左右子树仍然是左结点的值小于右结点的值，我们再试着交换他们的左右子树，得到：
+
+              8
+            /  \
+          10    6
+         /\      /\
+        11  9  7   5
+        刚好就是要求的输出。
+>上面的分析印证了我们的直觉：在遍历二元查找树时每访问到一个结点，交换它的左右子树。这种思路用递归不难实现，将遍历二元查找树的代码稍作修改就可以了。
+
+- 参考代码如下：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Mirror a BST (swap the left right child of each node) recursively
+        // the head of BST in initial call
+        ///////////////////////////////////////////////////////////////////////
+        void MirrorRecursively(BSTreeNode *pNode)
+        {
+        	if(!pNode)
+        		return;
+        
+        	// swap the right and left child sub-tree
+        	BSTreeNode *pTemp = pNode->m_pLeft;
+        	pNode->m_pLeft = pNode->m_pRight;
+        	pNode->m_pRight = pTemp;
+        	
+        // mirror left child sub-tree if not null
+        	if(pNode->m_pLeft)
+        		MirrorRecursively(pNode->m_pLeft);  
+        
+        	// mirror right child sub-tree if not null
+        	if(pNode->m_pRight)
+        		MirrorRecursively(pNode->m_pRight); 
+        }
+
+>由于递归的本质是编译器生成了一个函数调用的栈，因此用循环来完成同样任务时最简单的办法就是用一个辅助栈来模拟递归。首先我们把树的头结点放入栈中。在循环中，只要栈不为空，弹出栈的栈顶结点，交换它的左右子树。如果它有左子树，把它的左子树压入栈中；如果它有右子树，把它的右子树压入栈中。这样在下次循环中就能交换它儿子结点的左右子树了。
+
+- 参考代码如下：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Mirror a BST (swap the left right child of each node) Iteratively
+        // Input: pTreeHead: the head of BST
+        ///////////////////////////////////////////////////////////////////////
+        void MirrorIteratively(BSTreeNode *pTreeHead)
+        {
+        	if(!pTreeHead)
+        		return;
+        
+        	std::stack<BSTreeNode*>stackTreeNode;
+        	stackTreeNode.push(pTreeHead);
+        
+        while(stackTreeNode.size())
+        	{
+        		BSTreeNode *pNode = stackTreeNode.top();
+        		stackTreeNode.pop();
+        
+        		// swap the right and left child sub-tree
+        		BSTreeNode *pTemp = pNode->m_pLeft;
+        		pNode->m_pLeft = pNode->m_pRight;
+        		pNode->m_pRight = pTemp;
+        
+        		// push left child sub-tree into stack if not null
+        		if(pNode->m_pLeft)
+        			stackTreeNode.push(pNode->m_pLeft);
+        
+        		// push right child sub-tree into stack if not null
+        		if(pNode->m_pRight)
+			stackTreeNode.push(pNode->m_pRight);
+        	}
+        }
+
+### 12.－从上往下遍历二元树
+###### 题目：输入一颗二元树，从上往下按层打印树的每个结点，同一层中按照从左往右的顺序打印。 
+        例如输入
+             8
+            /  \
+           6    10
+         /\     /\
+        5  7   9  11
+        输出8   6   10   5   7   9   11。
+>分析：这曾是微软的一道面试题。这道题实质上是要求遍历一棵二元树，只不过不是我们熟悉的前序、中序或者后序遍历。
+>>我们从树的根结点开始分析。自然先应该打印根结点8，同时为了下次能够打印8的两个子结点，我们应该在遍历到8时把子结点6和10保存到一个数据容器中。现在数据容器中就有两个元素6 和10了。按照从左往右的要求，我们先取出6访问。打印6的同时要把6的两个子结点5和7放入数据容器中，此时数据容器中有三个元素10、5和7。接下来我们应该从数据容器中取出结点10访问了。注意10比5和7先放入容器，此时又比5和7先取出，就是我们通常说的先入先出。因此不难看出这个数据容器的类型应该是个队列。
+>>>既然已经确定数据容器是一个队列，现在的问题变成怎么实现队列了。实际上我们无需自己动手实现一个，因为STL已经为我们实现了一个很好的deque（两端都可以进出的队列），我们只需要拿过来用就可以了。
+>>>>我们知道树是图的一种特殊退化形式。同时如果对图的深度优先遍历和广度优先遍历有比较深刻的理解，将不难看出这种遍历方式实际上是一种广度优先遍历。因此这道题的本质是在二元树上实现广度优先遍历。
+
+- 参考代码：
+
+        #include <deque>
+        #include <iostream>
+        using namespace std;
+        
+        struct BTreeNode // a node in the binary tree
+        {
+        	int         m_nValue; // value of node
+        	BTreeNode  *m_pLeft;  // left child of node
+        	BTreeNode  *m_pRight; // right child of node
+        };
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Print a binary tree from top level to bottom level
+        // Input: pTreeRoot - the root of binary tree
+        ///////////////////////////////////////////////////////////////////////
+        void PrintFromTopToBottom(BTreeNode *pTreeRoot)
+        {
+        	if(!pTreeRoot)
+        		return;
+        
+        	// get a empty queue
+        	deque<BTreeNode *> dequeTreeNode;
+        
+        	// insert the root at the tail of queue
+        	dequeTreeNode.push_back(pTreeRoot);
+        
+        	while(dequeTreeNode.size())
+        	{
+        		// get a node from the head of queue
+        		BTreeNode *pNode = dequeTreeNode.front();
+        		dequeTreeNode.pop_front();
+        
+        		// print the node
+        		cout << pNode->m_nValue << ' ';
+        
+        		// print its left child sub-tree if it has
+        		if(pNode->m_pLeft)
+        			dequeTreeNode.push_back(pNode->m_pLeft);
+        		// print its right child sub-tree if it has
+        		if(pNode->m_pRight)
+        			dequeTreeNode.push_back(pNode->m_pRight);
+        	}
+        }
 

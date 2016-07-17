@@ -233,7 +233,8 @@
 5.pop|3,4,2|0,0,2|2
 6.pop|3,4|0,0|3
 7.push0|3,4,0|0,0,2|0
->讨论：如果思路正确，编写上述代码不是一件很难的事情。但如果能注意一些细节无疑         能在面试中加分。
+
+>讨论：如果思路正确，编写上述代码不是一件很难的事情。但如果能注意一些细节无疑能在面试中加分。
 
         比如我在上面的代码中做了如下的工作：
         用模板类实现。如果别人的元素类型只是int类型，模板将能给面试官带来好印象；
@@ -243,3 +244,121 @@
         总之，在面试时如果时间允许，尽量把代码写的漂亮一些。
         说不定代码中的几个小亮点就能让自己轻松拿到心仪的Offer。
 
+
+### 3.求子数组的最大和
+###### 题目：输入一个整形数组，数组里有正数也有负数。数组中连续的一个或多个整数组成一个子数组，每个子数组都有一个和。求所有子数组的和的最大值。要求时间复杂度为O(n)。
+        例如输入的数组为1, -2, 3, 10, -4, 7, 2, -5，和最大的子数组为3, 10, -4, 7, 2，因此输出为该子数组的和18。
+>分析：本题最初为2005年浙江大学计算机系的考研题的最后一道程序设计题，在2006年里包括google在内的很多知名公司都把本题当作面试题。由于本题在网络中广为流传，本题也顺利成为2006年程序员面试题中经典中的经典。
+>>如果不考虑时间复杂度，我们可以枚举出所有子数组并求出他们的和。不过非常遗憾的是，由于长度为n的数组有O(n2)个子数组；而且求一个长度为n的数组的和的时间复杂度为O(n)。因此这种思路的时间是O(n3)。
+>>>很容易理解，当我们加上一个正数时，和会增加；当我们加上一个负数时，和会减少。如果当前得到的和是个负数，那么这个和在接下来的累加中应该抛弃并重新清零，不然的话这个负数将会减少接下来的和。基于这样的思路，我们可以写出如下代码。
+
+- 参考代码：
+
+        /////////////////////////////////////////////////////////////////////////////
+        // Find the greatest sum of all sub-arrays
+        // Return value: if the input is valid, return true, otherwise return false
+        /////////////////////////////////////////////////////////////////////////////
+        bool FindGreatestSumOfSubArray
+        (
+        	int *pData,           // an array
+        	unsigned int nLength, // the length of array
+        	int &nGreatestSum     // the greatest sum of all sub-arrays
+        )
+        {
+        	// if the input is invalid, return false
+        	if((pData == NULL) || (nLength == 0))
+        		return false;
+        
+        	int nCurSum = nGreatestSum = 0;
+        	for(unsigned int i = 0; i < nLength; ++i)
+        	{
+        		nCurSum += pData[i];
+        
+        		// if the current sum is negative, discard it
+        		if(nCurSum < 0)
+        			nCurSum = 0;
+        
+        		// if a greater sum is found, update the greatest sum
+        		if(nCurSum > nGreatestSum)
+        			nGreatestSum = nCurSum;
+        	}
+         
+        	// if all data are negative, find the greatest element in the array
+        	if(nGreatestSum == 0)
+        	{
+        		nGreatestSum = pData[0];
+        		for(unsigned int i = 1; i < nLength; ++i)
+        		{
+        			if(pData[i] > nGreatestSum)
+        				nGreatestSum = pData[i];
+        		}
+        	}
+        
+        	return true;
+        } 
+        
+>讨论：上述代码中有两点值得和大家讨论一下：
+>>函数的返回值不是子数组和的最大值，而是一个判断输入是否有效的标志。如果函数返回值的是子数组和的最大值，那么当输入一个空指针是应该返回什么呢？返回0？那这个函数的用户怎么区分输入无效和子数组和的最大值刚好是0这两中情况呢？基于这个考虑，本人认为把子数组和的最大值以引用的方式放到参数列表中，同时让函数返回一个函数是否正常执行的标志。
+>>>输入有一类特殊情况需要特殊处理。当输入数组中所有整数都是负数时，子数组和的最大值就是数组中的最大元素。
+
+### 4.在二元树中找出和为某一值的所有路径   
+###### 题目：输入一个整数和一棵二元树。从树的根结点开始往下访问一直到叶结点所经过的所有结点形成一条路径。打印出和与输入整数相等的所有路径。
+        例如输入整数22和如下二元树
+                                            10
+                                           /   \
+                                          5     12
+                                        /   \   
+                                     　4     7  
+        则打印出两条路径：10, 12和10, 5, 7。
+        二元树结点的数据结构定义为：
+        struct BinaryTreeNode // a node in the binary tree
+        {
+        	int              m_nValue; // value of node
+        	BinaryTreeNode  *m_pLeft;  // left child of node
+        	BinaryTreeNode  *m_pRight; // right child of node
+        };
+>分析：这是百度的一道笔试题，考查对树这种基本数据结构以及递归函数的理解。
+当访问到某一结点时，把该结点添加到路径上，并累加当前结点的值。如果当前结点为叶结点并且当前路径的和刚好等于输入的整数，则当前的路径符合要求，我们把它打印出来。如果当前结点不是叶结点，则继续访问它的子结点。当前结点访问结束后，递归函数将自动回到父结点。因此我们在函数退出之前要在路径上删除当前结点并减去当前结点的值，以确保返回父结点时路径刚好是根结点到父结点的路径。我们不难看出保存路径的数据结构实际上是一个栈结构，因为路径要与递归调用状态一致，而递归调用本质就是一个压栈和出栈的过程。
+
+- 参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find paths whose sum equal to expected sum
+        ///////////////////////////////////////////////////////////////////////
+        void FindPath
+        (
+        	BinaryTreeNode*   pTreeNode,    // a node of binary tree
+        	int               expectedSum,  // the expected sum
+        	std::vector<int>&path,        // a pathfrom root to current node
+        	int&              currentSum    // the sum of path
+        )
+        {
+        	if(!pTreeNode)
+        		return;
+        
+        	currentSum += pTreeNode->m_nValue;
+        	path.push_back(pTreeNode->m_nValue);
+        
+        	// if the node is a leaf, and the sum is same as pre-defined, 
+        	// the path is what we want. print the path
+        	bool isLeaf = (!pTreeNode->m_pLeft && !pTreeNode->m_pRight);
+        	if(currentSum == expectedSum && isLeaf)
+        	{		
+        std::vector<int>::iterator iter =path.begin();
+        for(; iter != path.end(); ++ iter)
+        			std::cout<<*iter<<'\t';
+        		std::cout<<std::endl;
+        	}
+        
+        	// if the node is not a leaf, goto its children
+        	if(pTreeNode->m_pLeft)
+        		FindPath(pTreeNode->m_pLeft, expectedSum, path, currentSum);
+        	if(pTreeNode->m_pRight)
+        		FindPath(pTreeNode->m_pRight, expectedSum, path, currentSum);
+        
+        	// when we finish visiting a node and return to its parent node,
+        	// we should delete this node from the path and 
+        	// minus the node's value from the current sum
+        	currentSum -= pTreeNode->m_nValue;	//!!I think here is no use
+        	path.pop_back();
+        } 

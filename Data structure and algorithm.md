@@ -362,3 +362,294 @@
         	currentSum -= pTreeNode->m_nValue;	//!!I think here is no use
         	path.pop_back();
         } 
+
+### 5.查找最小的k个元素
+###### 题目：输入n个整数，输出其中最小的k个。
+        例如输入1，2，3，4，5，6，7和8这8个数字，则最小的4个数字为1，2，3和4。
+>分析：这道题最简单的思路莫过于把输入的n个整数排序，这样排在最前面的k个数就是最小的k个数。只是这种思路的时间复杂度为O(nlogn)。我们试着寻找更快的解决思路。
+>>我们可以开辟一个长度为k的数组。每次从输入的n个整数中读入一个数。如果数组中已经插入的元素少于k个，则将读入的整数直接放到数组中。否则长度为k的数组已经满了，不能再往数组里插入元素，只能替换了。如果读入的这个整数比数组中已有k个整数的最大值要小，则用读入的这个整数替换这个最大值；如果读入的整数比数组中已有k个整数的最大值还要大，则读入的这个整数不可能是最小的k个整数之一，抛弃这个整数。这种思路相当于只要排序k个整数，因此时间复杂可以降到O(n+nlogk)。通常情况下k要远小于n，所以这种办法要优于前面的思路。
+>>>这是我能够想出来的最快的解决方案。不过从给面试官留下更好印象的角度出发，我们可以进一步把代码写得更漂亮一些。从上面的分析，当长度为k的数组已经满了之后，如果需要替换，每次替换的都是数组中的最大值。在常用的数据结构中，能够在O(1)时间里得到最大值的数据结构为最大堆。因此我们可以用堆（heap）来代替数组。
+>>>>另外，自己重头开始写一个最大堆需要一定量的代码。我们现在不需要重新去发明车轮，因为前人早就发明出来了。同样，STL中的set和multiset为我们做了很好的堆的实现，我们可以拿过来用。既偷了懒，又给面试官留下熟悉STL的好印象，何乐而不为之？
+
+- 参考代码：
+
+        #include <set>
+        #include <vector>
+        #include <iostream>
+        
+        using namespace std;
+
+        typedef multiset<int, greater<int> >  IntHeap;
+        
+        ///////////////////////////////////////////////////////////////////////
+        // find k least numbers in a vector
+        ///////////////////////////////////////////////////////////////////////
+        void FindKLeastNumbers
+        (
+        	const vector<int>& data,               // a vector of data
+        	IntHeap& leastNumbers,                 // k least numbers, output
+        	unsigned int k                              
+        )
+        {
+        	leastNumbers.clear();
+
+        	if(k == 0 || data.size() < k)
+        		return;
+        
+        	vector<int>::const_iterator iter = data.begin();
+        	for(; iter != data.end(); ++ iter)
+        	{
+        		// if less than k numbers was inserted into leastNumbers
+        		if((leastNumbers.size()) < k)
+        			leastNumbers.insert(*iter);
+        
+        		// leastNumbers contains k numbers and it's full now
+        		else
+        		{
+        			// first number in leastNumbers is the greatest one
+        			IntHeap::iterator iterFirst = leastNumbers.begin();
+        
+        			// if is less than the previous greatest number 
+        			if(*iter < *(leastNumbers.begin()))
+        			{
+        				// replace the previous greatest number
+        				leastNumbers.erase(iterFirst);
+        				leastNumbers.insert(*iter);
+        			}
+        		}
+        	}
+        }
+
+### 6.判断整数序列是不是二元查找树的后序遍历结果 
+###### 题目：输入一个整数数组，判断该数组是不是某二元查找树的后序遍历的结果。如果是返回true，否则返回false。 
+        例如输入5、7、6、9、11、10、8，由于这一整数序列是如下树的后序遍历结果：
+                 8
+              /  \
+              6    10
+            / \    / \
+          5   7   9  11
+        因此返回true。
+        如果输入7、4、6、5，没有哪棵树的后序遍历的结果是这个序列，因此返回false。
+>分析：这是一道trilogy的笔试题，主要考查对二元查找树的理解。
+在后续遍历得到的序列中，最后一个元素为树的根结点。从头开始扫描这个序列，比根结点小的元素都应该位于序列的左半部分；从第一个大于跟结点开始到跟结点前面的一个元素为止，所有元素都应该大于跟结点，因为这部分元素对应的是树的右子树。根据这样的划分，把序列划分为左右两部分，我们递归地确认序列的左、右两部分是不是都是二元查找树。
+
+- 参考代码：
+
+        using namespace std;
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Verify whether a squence of integers are the post order traversal
+        // of a binary search tree (BST)
+        // Input: squence - the squence of integers
+        //        length  - the length of squence
+        // Return: return ture if the squence is traversal result of a BST,
+        //         otherwise, return false
+        ///////////////////////////////////////////////////////////////////////
+        bool verifySquenceOfBST(int squence[], int length)
+        {
+        	if(squence == NULL || length <= 0)
+        		return false;
+        
+        	// root of a BST is at the end of post order traversal squence
+        	int root = squence[length - 1];
+        
+        	// the nodes in left sub-tree are less than the root
+        	int i = 0;
+        	for(; i < length - 1; ++ i)
+        	{
+        		if(squence[i] > root)
+        			break;
+        	}
+        
+        	// the nodes in the right sub-tree are greater than the root
+        	int j = i;
+        	for(; j < length - 1; ++ j)
+        	{
+        		if(squence[j] < root)
+        			return false;
+        	}
+        
+        	// verify whether the left sub-tree is a BST
+        	bool left = true;
+        	if(i > 0)
+        		left = verifySquenceOfBST(squence, i);
+        
+        	// verify whether the right sub-tree is a BST
+        	bool right = true;
+        	if(i < length - 1)
+        		right = verifySquenceOfBST(squence + i, length - i - 1);
+        
+        	return (left && right);
+        }
+
+### 7.翻转句子中单词的顺序   
+###### 题目：输入一个英文句子，翻转句子中单词的顺序，但单词内字符的顺序不变。句子中单词以空格符隔开。为简单起见，标点符号和普通字母一样处理。
+        例如输入“I am a student.”，则输出“student. a am I”。
+>分析：由于编写字符串相关代码能够反映程序员的编程能力和编程习惯，与字符串相关的问题一直是程序员笔试、面试题的热门题目。本题也曾多次受到包括微软在内的大量公司的青睐。
+>>由于本题需要翻转句子，我们先颠倒句子中的所有字符。这时，不但翻转了句子中单词的顺序，而且单词内字符也被翻转了。我们再颠倒每个单词内的字符。由于单词内的字符被翻转两次，因此顺序仍然和输入时的顺序保持一致。
+>>>还是以上面的输入为例子。翻转“I am a student.”中所有字符得到“.tneduts a ma I”，再翻转每个单词中字符的顺序得到“students. a am I”，正是符合要求的输出。
+
+- 参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Reverse a string between two pointers
+        // Input: pBegin - the begin pointer in a string
+        //        pEnd   - the end pointer in a string
+        ///////////////////////////////////////////////////////////////////////
+        void Reverse(char *pBegin, char *pEnd)
+        {
+        	if(pBegin == NULL || pEnd == NULL)
+        		return;
+        
+        	while(pBegin < pEnd)
+        	{
+        		char temp = *pBegin;
+        		*pBegin = *pEnd;
+        		*pEnd = temp;
+        
+        		pBegin ++, pEnd --;
+        	}
+        }
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Reverse the word order in a sentence, but maintain the character
+        // order inside a word
+        // Input: pData - the sentence to be reversed
+        ///////////////////////////////////////////////////////////////////////
+        char* ReverseSentence(char *pData)
+        {
+        	if(pData == NULL)
+        		return NULL;
+        
+        	char *pBegin = pData;
+        	char *pEnd = pData;
+        
+        	while(*pEnd != '\0')
+        		pEnd ++;
+        	pEnd--;
+        
+        	// Reverse the whole sentence
+        	Reverse(pBegin, pEnd);
+        
+        	// Reverse every word in the sentence
+        	pBegin = pEnd = pData;
+        	while(*pBegin != '\0')
+        	{
+        		if(*pBegin == ' ')
+        		{
+        			pBegin ++;
+        			pEnd ++;
+        			continue;
+        		}
+        		// A word is between with pBegin and pEnd, reverse it
+        		else if(*pEnd == ' ' || *pEnd == '\0')
+        		{
+        			Reverse(pBegin, --pEnd);
+        			pBegin = ++pEnd;
+        		}
+        		else
+        		{
+        			pEnd ++;
+        		}
+        	}
+        
+        	return pData;
+        }
+
+### 8.求1+2+...+n
+###### 题目：求1+2+…+n，要求不能使用乘除法、for、while、if、else、switch、case等关键字以及条件判断语句（A?B:C）。
+>分析：这道题没有多少实际意义，因为在软件开发中不会有这么变态的限制。但这道题却能有效地考查发散思维能力，而发散思维能力能反映出对编程相关技术理解的深刻程度。
+>>通常求1+2+…+n除了用公式n(n+1)/2之外，无外乎循环和递归两种思路。由于已经明确限制for和while的使用，循环已经不能再用了。同样，递归函数也需要用if语句或者条件判断语句来判断是继续递归下去还是终止递归，但现在题目已经不允许使用这两种语句了。
+>>>我们仍然围绕循环做文章。循环只是让相同的代码执行n遍而已，我们完全可以不用for和while达到这个效果。比如定义一个类，我们new一含有n个这种类型元素的数组，那么该类的构造函数将确定会被调用n次。我们可以将需要执行的代码放到构造函数里。
+
+- 如下代码正是基于这个思路：
+
+        class Temp
+        {
+        public:
+        	Temp() { ++ N; Sum += N; }
+        
+        	static void Reset() { N = 0; Sum = 0; }
+        	static int GetSum() { return Sum; }
+        
+        private:
+        	static int N;
+        	static int Sum;
+        };
+        
+        int Temp::N = 0;
+        int Temp::Sum = 0;
+        
+        int solution1_Sum(int n)
+        {
+              Temp::Reset();
+        
+        	Temp *a = new Temp[n];
+        	delete []a;
+        	a = 0;
+        
+              return Temp::GetSum();
+        }
+
+>我们同样也可以围绕递归做文章。既然不能判断是不是应该终止递归，我们不妨定义两个函数。一个函数充当递归函数的角色，另一个函数处理终止递归的情况，我们需要做的就是在两个函数里二选一。从二选一我们很自然的想到布尔变量，比如ture（1）的时候调用第一个函数，false（0）的时候调用第二个函数。那现在的问题是如和把数值变量n转换成布尔值。如果对n连续做两次反运算，即!!n，那么非零的n转换为true，0转换为false。
+
+- 有了上述分析，我们再来看下面的代码：
+
+        class A;
+        A* Array[2];
+        
+        class A
+        {
+        public:
+        	virtual int Sum (int n) { return 0; }
+        };
+        
+        class B: public A
+        {
+        public:
+        	virtual int Sum (int n) { return Array[!!n]->Sum(n-1)+n; }
+        };
+        
+        int solution2_Sum(int n)
+        {
+        	A a;
+        	B b;
+        	Array[0] = &a;
+        	Array[1] = &b;
+        
+        	int value = Array[1]->Sum(n);
+        
+        	return value;
+        }
+
+>这种方法是用虚函数来实现函数的选择。当n不为零时，执行函数B::Sum；当n为0时，执行A::Sum。
+
+- 我们也可以直接用函数指针数组，这样可能还更直接一些：
+
+        typedef int (*fun)(int);
+        
+        int solution3_f1(int i) 
+        {
+        	return 0;
+        }
+        
+        int solution3_f2(int i)
+        {
+        	fun f[2]={solution3_f1, solution3_f2}; 
+        	return i+f[!!i](i-1);
+        }
+
+- 另外我们还可以让编译器帮我们来完成类似于递归的运算，比如如下代码：
+
+        template <int n> struct solution4_Sum
+        {
+        	enum Value { N = solution4_Sum<n - 1>::N + n};
+        };
+        template <> struct solution4_Sum<1>
+        {
+        	enum Value { N = 1};
+        };
+
+>solution4_Sum<100>::N就是1+2+...+100的结果。当编译器看到solution4_Sum<100>时，就是为模板类solution4_Sum以参数100生成该类型的代码。但以100为参数的类型需要得到以99为参数的类型，因为solution4_Sum<100>::N=solution4_Sum<99>::N+100。这个过程会递归一直到参数为1的类型，由于该类型已经显式定义，编译器无需生成，递归编译到此结束。由于这个过程是在编译过程中完成的，因此要求输入n必须是在编译期间就能确定，不能动态输入。这是该方法最大的缺点。而且编译器对递归编译代码的递归深度是有限制的，也就是要求n不能太大。
+
+

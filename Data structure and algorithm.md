@@ -965,3 +965,448 @@
         	}
         }
 
+### 13.第一个只出现一次的字符
+###### 题目：在一个字符串中找到第一个只出现一次的字符。如输入abaccdeff，则输出b。 
+>分析：这道题是2006年google的一道笔试题。
+看到这道题时，最直观的想法是从头开始扫描这个字符串中的每个字符。当访问到某字符时拿这个字符和后面的每个字符相比较，如果在后面没有发现重复的字符，则该字符就是只出现一次的字符。如果字符串有n个字符，每个字符可能与后面的O(n)个字符相比较，因此这种思路时间复杂度是O(n2)。我们试着去找一个更快的方法。
+>>由于题目与字符出现的次数相关，我们是不是可以统计每个字符在该字符串中出现的次数？要达到这个目的，我们需要一个数据容器来存放每个字符的出现次数。在这个数据容器中可以根据字符来查找它出现的次数，也就是说这个容器的作用是把一个字符映射成一个数字。在常用的数据容器中，哈希表正是这个用途。
+>>>哈希表是一种比较复杂的数据结构。由于比较复杂，STL中没有实现哈希表，因此需要我们自己实现一个。但由于本题的特殊性，我们只需要一个非常简单的哈希表就能满足要求。由于字符（char）是一个长度为8的数据类型，因此总共有可能256种可能。于是我们创建一个长度为256的数组，每个字母根据其ASCII码值作为数组的下标对应数组的对应项，而数组中存储的是每个字符对应的次数。这样我们就创建了一个大小为256，以字符ASCII码为键值的哈希表。
+>>>>我们第一遍扫描这个数组时，每碰到一个字符，在哈希表中找到对应的项并把出现的次数增加一次。这样在进行第二次扫描时，就能直接从哈希表中得到每个字符出现的次数了。
+
+- 参考代码如下：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find the first char which appears only once in a string
+        // Input: pString - the string
+        // Output: the first not repeating char if the string has, otherwise 0
+        ///////////////////////////////////////////////////////////////////////
+        char FirstNotRepeatingChar(char* pString)
+        {
+        	// invalid input
+        	if(!pString)
+        		return 0;
+        
+        	// get a hash table, and initialize it 
+        		constinttableSize =256;
+        unsignedinthashTable[tableSize];
+        for(unsignedinti = 0; i<tableSize; ++ i)
+        hashTable[i] = 0;
+        
+        	// get the how many times each char appears in the string
+        	char* pHashKey = pString;
+        	while(*(pHashKey) != '\0')
+        		hashTable[*(pHashKey++)] ++;
+        
+        	// find the first char which appears only once in a string
+        	pHashKey = pString;
+        	while(*pHashKey != '\0')
+        	{
+        		if(hashTable[*pHashKey] == 1)
+        			return *pHashKey;
+        
+        		pHashKey++;
+        	}
+        
+        	// if the string is empty 
+        	// or every char in the string appears at least twice
+        	return 0;
+        } 
+
+### 14.圆圈中最后剩下的数字 
+###### 题目：n个数字（0,1,…,n-1）形成一个圆圈，从数字0开始，每次从这个圆圈中删除第m个数字（第一个为当前数字本身，第二个为当前数字的下一个数字）。当一个数字删除后，从被删除数字的下一个继续删除第m个数字。求出在这个圆圈中剩下的最后一个数字。
+>分析：既然题目有一个数字圆圈，很自然的想法是我们用一个数据结构来模拟这个圆圈。在常用的数据结构中，我们很容易想到用环形列表。我们可以创建一个总共有m个数字的环形列表，然后每次从这个列表中删除第m个元素。
+>>在参考代码中，我们用STL中std::list来模拟这个环形列表。由于list并不是一个环形的结构，因此每次跌代器扫描到列表末尾的时候，要记得把跌代器移到列表的头部。这样就是按照一个圆圈的顺序来遍历这个列表了。
+>>>这种思路需要一个有n个结点的环形列表来模拟这个删除的过程，因此内存开销为O(n)。而且这种方法每删除一个数字需要m步运算，总共有n个数字，因此总的时间复杂度是O(mn)。当m和n都很大的时候，这种方法是很慢的。
+>>>>接下来我们试着从数学上分析出一些规律。首先定义最初的n个数字（0,1,…,n-1）中最后剩下的数字是关于n和m的方程为f(n,m)。
+>>>>>在这n个数字中，第一个被删除的数字是m%n-1，为简单起见记为k。那么删除k之后的剩下n-1的数字为0,1,…,k-1,k+1,…,n-1，并且下一个开始计数的数字是k+1。相当于在剩下的序列中，k+1排到最前面，从而形成序列k+1,…,n-1,0,…k-1。该序列最后剩下的数字也应该是关于n和m的函数。由于这个序列的规律和前面最初的序列不一样（最初的序列是从0开始的连续序列），因此该函数不同于前面函数，记为f’(n-1,m)。最初序列最后剩下的数字f(n,m)一定是剩下序列的最后剩下数字f’(n-1,m)，所以f(n,m)=f’(n-1,m)。
+>>>>>>接下来我们把剩下的的这n-1个数字的序列k+1,…,n-1,0,…k-1作一个映射，
+
+        映射的结果是形成一个从0到n-2的序列：
+        k+1    ->    0
+        k+2    ->    1
+        …
+        n-1    ->    n-k-2
+        0   ->    n-k-1
+        …
+        k-1   ->   n-2
+>把映射定义为p，则p(x)=(x-k-1)%n，即如果映射前的数字是x，则映射后的数字是(x-k-1)%n。对应的逆映射是p-1(x)=(x+k+1)%n。
+>>由于映射之后的序列和最初的序列有同样的形式，都是从0开始的连续序列，因此仍然可以用函数f来表示，记为f(n-1,m)。根据我们的映射规则，映射之前的序列最后剩下的数字f’(n-1,m)= p-1 [f(n-1,m)]=[f(n-1,m)+k+1]%n。把k=m%n-1代入得到f(n,m)=f’(n-1,m)=[f(n-1,m)+m]%n。
+经过上面复杂的分析，我们终于找到一个递归的公式。要得到n个数字的序列的最后剩下的数字，只需要得到n-1个数字的序列的最后剩下的数字，并可以依此类推。当n=1时，也就是序列中开始只有一个数字0，那么很显然最后剩下的数字就是0。
+
+        我们把这种关系表示为：
+                 0                  n=1
+        f(n,m)={
+                [f(n-1,m)+m]%n     n>1
+>尽管得到这个公式的分析过程非常复杂，但它用递归或者循环都很容易实现。最重要的是，这是一种时间复杂度为O(n)，空间复杂度为O(1)的方法，因此无论在时间上还是空间上都优于前面的思路。
+
+- 思路一的参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // n integers (0, 1, ... n - 1) form a circle. Remove the mth from 
+        // the circle at every time. Find the last number remaining 
+        // Input: n - the number of integers in the circle initially
+        //        m - remove the mth number at every time
+        // Output: the last number remaining when the input is valid,
+        //         otherwise -1
+        ///////////////////////////////////////////////////////////////////////
+        int LastRemaining_Solution1(unsigned int n, unsigned int m)
+        {
+        	// invalid input
+        	if(n < 1 || m < 1)
+        		return -1;
+        
+        	unsigned int i = 0;
+        
+        	// initiate a list with n integers (0, 1, ... n - 1)
+        	list<int> integers;
+        	for(i = 0; i < n; ++ i)
+        		integers.push_back(i);
+        
+        	list<int>::iterator curinteger = integers.begin();
+            	while(integers.size() > 1)
+        	{
+        		// find the mth integer. Note that std::list is not a circle
+        		// so we should handle it manually
+        		for(int i = 1; i < m; ++ i)
+        		{
+        			curinteger ++;
+        			if(curinteger == integers.end())
+        				curinteger = integers.begin();
+        		}
+        
+        		// remove the mth integer. Note that std::list is not a circle
+        		// so we should handle it manually
+        		list<int>::iterator nextinteger = ++ curinteger;
+        		if(nextinteger == integers.end())
+        			nextinteger = integers.begin();
+        
+        		-- curinteger;
+        		integers.erase(curinteger);
+        		curinteger = nextinteger;
+        	}
+        
+        	return *(curinteger);
+        }
+
+- 思路二的参考代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // n integers (0, 1, ... n - 1) form a circle. Remove the mth from 
+        // the circle at every time. Find the last number remaining 
+        // Input: n - the number of integers in the circle initially
+        //        m - remove the mth number at every time
+        // Output: the last number remaining when the input is valid,
+        //         otherwise -1
+        ///////////////////////////////////////////////////////////////////////
+        int LastRemaining_Solution2(int n, unsigned int m)
+        {
+        	// invalid input
+        	if(n <= 0 || m < 0)
+        		return -1;
+        
+        	// if there are only one integer in the circle initially,
+        	// of course the last remaining one is 0
+        	int lastinteger = 0;
+        
+        	// find the last remaining one in the circle with n integers
+        	for (int i = 2; i <= n; i ++) 
+        		lastinteger = (lastinteger + m) % i;
+        
+        	return lastinteger;
+        }
+>如果对两种思路的时间复杂度感兴趣的读者可以把n和m的值设的稍微大一点，比如十万这个数量级的数字，运行的时候就能明显感觉出这两种思路写出来的代码时间效率大不一样。
+
+### 15.含有指针成员的类的拷贝
+######题目：下面是一个数组类的声明与实现。请分析这个类有什么问题，并针对存在的问题提出几种解决方案。
+
+        template<typename T> class Array
+        {
+        public:
+        	Array(unsigned arraySize):data(0), size(arraySize)
+        	{
+        		if(size > 0)
+        			data = new T[size];
+        	}
+        
+        	~Array()
+        	{
+        		if(data) delete[] data;
+        	}
+        
+        	void setValue(unsigned index, const T& value)
+        	{
+        		if(index < size)
+        			data[index] = value;
+        	}
+        
+        	T getValue(unsigned index) const
+        	{
+        		if(index < size)
+        			return data[index];
+        		else
+        			return T();
+        	}
+        
+        private:
+        	T* data;
+        	unsigned size;
+        };
+>分析：我们注意在类的内部封装了用来存储数组数据的指针。软件存在的大部分问题通常都可以归结指针的不正确处理。
+
+        这个类只提供了一个构造函数，而没有定义构造拷贝函数和重载拷贝运算符函数。当这     个类的用户按照下面的方式声明并实例化该类的一个实例
+        Array A(10);
+        Array B(A);
+        或者按照下面的方式把该类的一个实例赋值给另外一个实例
+        Array A(10);
+        Array B(10);
+        B=A;
+>编译器将调用其自动生成的构造拷贝函数或者拷贝运算符的重载函数。在编译器生成的缺省的构造拷贝函数和拷贝运算符的重载函数，对指针实行的是按位拷贝，仅仅只是拷贝指针的地址，而不会拷贝指针的内容。因此在执行完前面的代码之后，A.data和B.data指向的同一地址。当A或者B中任意一个结束其生命周期调用析构函数时，会删除data。由于他们的data指向的是同一个地方，两个实例的data都被删除了。但另外一个实例并不知道它的data已经被删除了，当企图再次用它的data的时候，程序就会不可避免地崩溃。
+>>由于问题出现的根源是调用了编译器生成的缺省构造拷贝函数和拷贝运算符的重载函数。一个最简单的办法就是禁止使用这两个函数。于是我们可以把这两个函数声明为私有函数，如果类的用户企图调用这两个函数，将不能通过编译。
+
+- 实现的代码如下：
+
+        private:
+        	Array(const Array& copy);
+        	const Array& operator = (const Array& copy); 
+        最初的代码存在问题是因为不同实例的data指向的同一地址，删除一个实例的data会把     另外一个实例的data也同时删除。因此我们还可以让构造拷贝函数或者拷贝运算符的重载函     数拷贝的不只是地址，而是数据。由于我们重新存储了一份数据，这样一个实例删除的时候     ，对另外一个实例没有影响。这种思路我们称之为深度拷贝。
+
+- 实现的代码如下：
+        public:
+        	Array(const Array& copy):data(0), size(copy.size)
+        	{
+        		if(size > 0)
+        		{
+        			data = new T[size];
+        			for(int i = 0; i < size; ++ i)
+        				setValue(i, copy.getValue(i));
+        		}
+        	}
+
+        	const Array& operator = (const Array& copy)
+        	{
+        		if(this == &copy)
+        			return *this;
+        
+        		if(data != NULL)
+        		{
+        			delete []data;
+        			data = NULL;
+        		}
+        
+        		size = copy.size;
+        		if(size > 0)
+        		{
+        			data = new T[size];
+        			for(int i = 0; i < size; ++ i)
+        				setValue(i, copy.getValue(i));
+        		}
+        	}
+
+>为了防止有多个指针指向的数据被多次删除，我们还可以保存究竟有多少个指针指向该数据。只有当没有任何指针指向该数据的时候才可以被删除。这种思路通常被称之为引用计数技术。在构造函数中，引用计数初始化为1；每当把这个实例赋值给其他实例或者以参数传给其他实例的构造拷贝函数的时候，引用计数加1，因为这意味着又多了一个实例指向它的data；每次需要调用析构函数或者需要把data赋值为其他数据的时候，引用计数要减1，因为这意味着指向它的data的指针少了一个。当引用计数减少到0的时候，data已经没有任何实例指向它了，这个时候就可以安全地删除。
+
+- 实现的代码如下：
+
+        public:
+        	Array(unsigned arraySize)
+        		:data(0), size(arraySize), count(new unsigned int)
+        	{
+        		*count = 1;
+        		if(size > 0)
+        			data = new T[size];
+        	}
+        
+        	Array(const Array& copy)
+        		: size(copy.size), data(copy.data), count(copy.count)
+        	{
+        		++ (*count);
+        	}
+        
+        	~Array()
+        	{
+        		Release();
+        	}
+        
+        	const Array& operator = (const Array& copy)
+        	{
+        		if(data == copy.data)
+        			return *this;
+        
+        		Release();
+        
+        		data = copy.data;
+        		size = copy.size;
+        		count = copy.count;
+        		++(*count);
+        	}
+        
+        private:
+        	void Release()
+        	{
+        		--(*count);
+        		if(*count == 0)
+        		{
+        			if(data)
+        			{
+        				delete []data;
+        				data = NULL;
+        			}
+        
+        			delete count;
+        			count = 0;
+        		}
+        	}
+        
+        	unsigned int *count; 
+
+### 16.O(logn)求Fibonacci数列
+###### 题目：定义Fibonacci数列如下： 
+                /  0                      n=0
+        f(n)=      1                      n=1
+                \  f(n-1)+f(n-2)          n=2
+        输入n，用最快的方法求该数列的第n项。
+>分析：在很多C语言教科书中讲到递归函数的时候，都会用Fibonacci作为例子。因此很多程序员对这道题的递归解法非常熟悉，看到题目就能写出如下的递归求解的代码。
+
+        ///////////////////////////////////////////////////////////////////////
+        // Calculate the nth item of Fibonacci Series recursively
+        ///////////////////////////////////////////////////////////////////////
+        long long Fibonacci_Solution1(unsigned int n)
+        {
+        	int result[2] = {0, 1};
+        	if(n < 2)
+        		return result[n];
+        
+        	return Fibonacci_Solution1(n - 1) + Fibonacci_Solution1(n - 2);
+        }
+>但是，教科书上反复用这个题目来讲解递归函数，并不能说明递归解法最适合这道题目。我们以求解f(10)作为例子来分析递归求解的过程。要求得f(10)，需要求得f(9)和f(8)。同样，要求得f(9)，要先求得f(8)和f(7)……我们用树形结构来表示这种依赖关系
+
+                          f(10)
+                       /        \
+                    f(9)         f(8)
+                  /     \       /    \
+               f(8)     f(7)  f(6)   f(5)
+              /   \     /   \ 
+           f(7)  f(6)  f(6) f(5)
+>我们不难发现在这棵树中有很多结点会重复的，而且重复的结点数会随着n的增大而急剧增加。这意味这计算量会随着n的增大而急剧增大。事实上，用递归方法计算的时间复杂度是以n的指数的方式递增的。大家可以求Fibonacci的第100项试试，感受一下这样递归会慢到什么程度。在我的机器上，连续运行了一个多小时也没有出来结果。
+>>其实改进的方法并不复杂。上述方法之所以慢是因为重复的计算太多，只要避免重复计算就行了。比如我们可以把已经得到的数列中间项保存起来，如果下次需要计算的时候我们先查找一下，如果前面已经计算过了就不用再次计算了。
+>>更简单的办法是从下往上计算，首先根据f(0)和f(1)算出f(2)，在根据f(1)和f(2)算出f(3)……依此类推就可以算出第n项了。很容易理解，这种思路的时间复杂度是O(n)。
+
+        ///////////////////////////////////////////////////////////////////////
+        // Calculate the nth item of Fibonacci Series iteratively
+        ///////////////////////////////////////////////////////////////////////
+        long long Fibonacci_Solution2(unsigned n)
+        {
+        	int result[2] = {0, 1};
+        	if(n < 2)
+        		return result[n];
+        
+        	long long  fibNMinusOne = 1;
+        	long long  fibNMinusTwo = 0;
+        	long long  fibN = 0;
+        	for(unsigned int i = 2; i <= n; ++ i)
+        	{
+        		fibN = fibNMinusOne + fibNMinusTwo;
+        
+        		fibNMinusTwo = fibNMinusOne;
+        		fibNMinusOne = fibN;
+        	}
+        
+        	return fibN;
+        }
+>这还不是最快的方法。下面介绍一种时间复杂度是O(logn)的方法。在介绍这种方法之前，先介绍一个数学公式：{f(n), f(n-1), f(n-1), f(n-2)} ={1, 1, 1,0}n-1
+(注：{f(n+1), f(n), f(n),f(n-1)}表示一个矩阵。在矩阵中第一行第一列是f(n+1)，第一行第二列是f(n)，第二行第一列是f(n)，第二行第二列是f(n-1)。)
+>>有了这个公式，要求得f(n)，我们只需要求得矩阵{1, 1, 1,0}的n-1次方，因为矩阵{1, 1, 1,0}的n-1次方的结果的第一行第一列就是f(n)。这个数学公式用数学归纳法不难证明。感兴趣的朋友不妨自己证明一下。
+>>>现在的问题转换为求矩阵{1,1,1,0}的乘方。如果简单第从0开始循环，n次方将需要n次运算，并不比前面的方法要快。但我们可以考虑乘方的如下性质：
+
+                /  an/2*an/2                      n为偶数时
+        an=
+               \  a(n-1)/2*a(n-1)/2            n为奇数时
+>要求得n次方，我们先求得n/2次方，再把n/2的结果平方一下。如果把求n次方的问题看成一个大问题，把求n/2看成一个较小的问题。这种把大问题分解成一个或多个小问题的思路我们称之为分治法。这样求n次方就只需要logn次运算了。
+>>实现这种方式时，首先需要定义一个2×2的矩阵，并且定义好矩阵的乘法以及乘方运算。当这些运算定义好了之后，剩下的事情就变得非常简单。
+
+- 完整的实现代码如下所示。
+
+        #include <cassert>
+        
+        ///////////////////////////////////////////////////////////////////////
+        // A 2 by 2 matrix
+        ///////////////////////////////////////////////////////////////////////
+        struct Matrix2By2
+        {
+        	Matrix2By2
+        	(
+        		long long m00 = 0, 
+        		long long m01 = 0, 
+        		long long m10 = 0, 
+        		long long m11 = 0
+        	)
+        	:m_00(m00), m_01(m01), m_10(m10), m_11(m11) 
+        	{
+        	}
+        
+        	long long m_00;
+        	long long m_01;
+        	long long m_10;
+        	long long m_11;
+        };
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Multiply two matrices
+        // Input: matrix1 - the first matrix
+        //        matrix2 - the second matrix
+        //Output: the production of two matrices
+        ///////////////////////////////////////////////////////////////////////
+        Matrix2By2 MatrixMultiply
+        (
+        	const Matrix2By2& matrix1, 
+        	const Matrix2By2& matrix2
+        )
+        {
+        	return Matrix2By2(
+        		matrix1.m_00 * matrix2.m_00 + matrix1.m_01 * matrix2.m_10,
+        		matrix1.m_00 * matrix2.m_01 + matrix1.m_01 * matrix2.m_11,
+        		matrix1.m_10 * matrix2.m_00 + matrix1.m_11 * matrix2.m_10,
+        		matrix1.m_10 * matrix2.m_01 + matrix1.m_11 * matrix2.m_11);
+        }
+        
+        ///////////////////////////////////////////////////////////////////////
+        // The nth power of matrix 
+        // 1  1
+        // 1  0
+        ///////////////////////////////////////////////////////////////////////
+        Matrix2By2 MatrixPower(unsigned int n)
+        {
+        	assert(n > 0);
+        
+        	Matrix2By2 matrix;
+        	if(n == 1)
+        	{
+        		matrix = Matrix2By2(1, 1, 1, 0);
+        	}
+        	else if(n % 2 == 0)
+        	{
+        		matrix = MatrixPower(n / 2);
+        		matrix = MatrixMultiply(matrix, matrix);
+        	}
+        	else if(n % 2 == 1)
+        	{
+        		matrix = MatrixPower((n - 1) / 2);
+        		matrix = MatrixMultiply(matrix, matrix);
+        		matrix = MatrixMultiply(matrix, Matrix2By2(1, 1, 1, 0));
+        	}
+        
+        	return matrix;
+        }
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Calculate the nth item of Fibonacci Series using devide and conquer
+        ///////////////////////////////////////////////////////////////////////
+        long long Fibonacci_Solution3(unsigned int n)
+        {
+        	int result[2] = {0, 1};
+        	if(n < 2)
+        		return result[n];
+        
+        	Matrix2By2 PowerNMinus2 = MatrixPower(n - 1);
+        	return PowerNMinus2.m_00;
+        }
+

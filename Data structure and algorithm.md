@@ -2419,5 +2419,330 @@ aßbß…lßm  nà…
         	}
         }
         
+   ### 32.不能被继承的类
+###### 题目：用C++设计一个不能被继承的类。
+>分析：这是Adobe公司2007年校园招聘的最新笔试题。这道题除了考察应聘者的C++基本功底外，还能考察反应能力，是一道很好的题目。
+在Java中定义了关键字final，被final修饰的类不能被继承。但在C++中没有final这个关键字，要实现这个要求还是需要花费一些精力。
+首先想到的是在C++ 中，子类的构造函数会自动调用父类的构造函数。同样，子类的析构函数也会自动调用父类的析构函数。要想一个类不能被继承，我们只要把它的构造函数和析构函数都定义为私有函数。那么当一个类试图从它那继承的时候，必然会由于试图调用构造函数、析构函数而导致编译错误。
+可是这个类的构造函数和析构函数都是私有函数了，我们怎样才能得到该类的实例呢？这难不倒我们，我们可以通过定义静态来创建和释放类的实例。
+
+-基于这个思路，我们可以写出如下的代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Define a class which can't be derived from
+        ///////////////////////////////////////////////////////////////////////
+        class FinalClass1
+        {
+        public:
+        	static FinalClass1* GetInstance() 
+        	{
+        		return new FinalClass1;
+        	}
+         
+        	static void DeleteInstance( FinalClass1* pInstance)
+        	{
+        		delete pInstance;
+        		pInstance = 0;
+    	}
+         
+        private:
+        	FinalClass1() {}
+        	~FinalClass1() {}
+        };
+>这个类是不能被继承，但在总觉得它和一般的类有些不一样，使用起来也有点不方便。比如，我们只能得到位于堆上的实例，而得不到位于栈上实例。
+
+        能不能实现一个和一般类除了不能被继承之外其他用法都一样的类呢？办法总是有的，不过需要一些技巧。请看如下代码：
+        ///////////////////////////////////////////////////////////////////////
+        // Define a class which can't be derived from
+        ///////////////////////////////////////////////////////////////////////
+    template <typename T> class MakeFinal
+        {
+        	friend T;
         
+        private:
+        	MakeFinal() {}
+        	~MakeFinal() {}
+        };
+         
+        class FinalClass2 : virtual public MakeFinal<FinalClass2>
+        {
+        public:
+        	FinalClass2() {}
+        	~FinalClass2() {}
+        };
+        这个类使用起来和一般的类没有区别，可以在栈上、也可以在堆上创建实例。尽管类MakeFinal<FinalClass2>的构造函数和析构函数都是私有的，但由于类FinalClass2是它的友元函数，因此在FinalClass2中调用MakeFinal<FinalClass2>的构造函数和析构函数都不会造成编译错误。
+        但当我们试图从FinalClass2继承一个类并创建它的实例时，却不同通过编译。
+        class Try : public FinalClass2
+        {
+        public:
+        	Try() {}
+    	~Try() {}
+        };
+        
+        Try temp; 
+>由于类FinalClass2是从类MakeFinal<FinalClass2>虚继承过来的，在调用Try的构造函数的时候，会直接跳过FinalClass2而直接调用MakeFinal<FinalClass2>的构造函数。非常遗憾的是，Try不是MakeFinal<FinalClass2>的友元，因此不能调用其私有的构造函数。
+基于上面的分析，试图从FinalClass2继承的类，一旦实例化，都会导致编译错误，因此是FinalClass2不能被继承。这就满足了我们设计要求。
+
+### 33.在O(1)时间删除链表结点
+###### 题目：给定链表的头指针和一个结点指针，在O(1)时间删除该结点。链表结点的定义如下：
+        struct ListNode
+        {
+        	int        m_nKey;
+        	ListNode*  m_pNext;
+        };
+        函数的声明如下：
+        void DeleteNode(ListNode* pListHead, ListNode* pToBeDeleted);
+>分析：这是一道广为流传的Google面试题，能有效考察我们的编程基本功，还能考察我们的反应速度，更重要的是，还能考察我们对时间复杂度的理解。
+在链表中删除一个结点，最常规的做法是从链表的头结点开始，顺序查找要删除的结点，找到之后再删除。由于需要顺序查找，时间复杂度自然就是O(n) 了。
+我们之所以需要从头结点开始查找要删除的结点，是因为我们需要得到要删除的结点的前面一个结点。我们试着换一种思路。我们可以从给定的结点得到它的下一个结点。这个时候我们实际删除的是它的下一个结点，由于我们已经得到实际删除的结点的前面一个结点，因此完全是可以实现的。当然，在删除之前，我们需要需要把给定的结点的下一个结点的数据拷贝到给定的结点中。此时，时间复杂度为O(1)。
+>上面的思路还有一个问题：如果删除的结点位于链表的尾部，没有下一个结点，怎么办？我们仍然从链表的头结点开始，顺便遍历得到给定结点的前序结点，并完成删除操作。这个时候时间复杂度是O(n)。
+>>那题目要求我们需要在O(1)时间完成删除操作，我们的算法是不是不符合要求？实际上，假设链表总共有n个结点，我们的算法在n-1总情况下时间复杂度是O(1)，只有当给定的结点处于链表末尾的时候，时间复杂度为O(n)。那么平均时间复杂度[(n-1)*O(1)+O(n)]/n，仍然为O(1)。
+
+- 基于前面的分析，我们不难写出下面的代码。
+
+        参考代码：
+        ///////////////////////////////////////////////////////////////////////
+        // Delete a node in a list
+        // Input: pListHead - the head of list
+        //        pToBeDeleted - the node to be deleted
+        ///////////////////////////////////////////////////////////////////////
+        void DeleteNode(ListNode* pListHead, ListNode* pToBeDeleted)
+        {
+        	if(!pListHead || !pToBeDeleted)
+                		return;
+        
+        	// if pToBeDeleted is not the last node in the list
+        	if(pToBeDeleted->m_pNext != NULL)
+        	{
+        		// copy data from the node next to pToBeDeleted
+        		ListNode* pNext = pToBeDeleted->m_pNext;
+        		pToBeDeleted->m_nKey = pNext->m_nKey;
+        		pToBeDeleted->m_pNext = pNext->m_pNext;
+        
+        		// delete the node next to the pToBeDeleted
+        		delete pNext;
+        		pNext = NULL;
+        	}
+        	// if pToBeDeleted is the last node in the list
+        	else
+        	{
+        		// get the node prior to pToBeDeleted
+        		ListNode* pNode = pListHead;
+        		while(pNode->m_pNext != pToBeDeleted)
+        		{
+        			pNode = pNode->m_pNext;			
+        		}
+        
+        		// deleted pToBeDeleted
+        		pNode->m_pNext = NULL;
+        		delete pToBeDeleted;
+        		pToBeDeleted = NULL;
+        	}
+        } 
+>值得注意的是，为了让代码看起来简洁一些，上面的代码基于两个假设：（1）给定的结点的确在链表中；（2）给定的要删除的结点不是链表的头结点。不考虑第一个假设对代码的鲁棒性是有影响的。至于第二个假设，当整个列表只有一个结点时，代码会有问题。但这个假设不算很过分，因为在有些链表的实现中，会创建一个虚拟的链表头，并不是一个实际的链表结点。这样要删除的结点就不可能是链表的头结点了。当然，在面试中，我们可以把这些假设和面试官交流。这样，面试官还是会觉得我们考虑问题很周到的。
+
+### 34.找出数组中两个只出现一次的数字
+###### 题目：一个整型数组里除了两个数字之外，其他的数字都出现了两次。请写程序找出这两个只出现一次的数字。要求时间复杂度是O(n)，空间复杂度是O(1)。
+>分析：这是一道很新颖的关于位运算的面试题。
+首先我们考虑这个问题的一个简单版本：一个数组里除了一个数字之外，其他的数字都出现了两次。请写程序找出这个只出现一次的数字。
+这个题目的突破口在哪里？题目为什么要强调有一个数字出现一次，其他的出现两次？我们想到了异或运算的性质：任何一个数字异或它自己都等于0。也就是说，如果我们从头到尾依次异或数组中的每一个数字，那么最终的结果刚好是那个只出现依次的数字，因为那些出现两次的数字全部在异或中抵消掉了。
+>>有了上面简单问题的解决方案之后，我们回到原始的问题。如果能够把原数组分为两个子数组。在每个子数组中，包含一个只出现一次的数字，而其他数字都出现两次。如果能够这样拆分原数组，按照前面的办法就是分别求出这两个只出现一次的数字了。
+我们还是从头到尾依次异或数组中的每一个数字，那么最终得到的结果就是两个只出现一次的数字的异或结果。因为其他数字都出现了两次，在异或中全部抵消掉了。由于这两个数字肯定不一样，那么这个异或结果肯定不为0，也就是说在这个结果数字的二进制表示中至少就有一位为1。我们在结果数字中找到第一个为1的位的位置，记为第N位。现在我们以第N位是不是1为标准把原数组中的数字分成两个子数组，第一个子数组中每个数字的第N位都为1，而第二个子数组的每个数字的第N位都为0。
+现在我们已经把原数组分成了两个子数组，每个子数组都包含一个只出现一次的数字，而其他数字都出现了两次。因此到此为止，所有的问题我们都已经解决。
+
+- 基于上述思路，我们不难写出如下代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find two numbers which only appear once in an array
+        // Input: data - an array contains two number appearing exactly once,
+        //               while others appearing exactly twice
+        //        length - the length of data
+        // Output: num1 - the first number appearing once in data
+        //         num2 - the second number appearing once in data
+        ///////////////////////////////////////////////////////////////////////
+        void FindNumsAppearOnce(int data[], int length, int &num1, int &num2)
+        {
+        	if (length < 2)
+        		return;
+        
+        	// get num1 ^ num2
+        	int resultExclusiveOR = 0;
+        	for (int i = 0; i < length; ++ i)
+    		resultExclusiveOR ^= data[i];
+            
+        	// get index of the first bit, which is 1 in resultExclusiveOR
+        	unsigned int indexOf1 = FindFirstBitIs1(resultExclusiveOR);	
+         
+        	num1 = num2 = 0;
+        	for (int j = 0; j < length; ++ j)
+        	{
+        		// divide the numbers in data into two groups,
+    		// the indexOf1 bit of numbers in the first group is 1,
+        		// while in the second group is 0
+        		if(IsBit1(data[j], indexOf1))
+        			num1 ^= data[j];
+        		else
+        			num2 ^= data[j];
+        	}
+        }
+         
+        ///////////////////////////////////////////////////////////////////////
+        // Find the index of first bit which is 1 in num (assuming not 0)
+        ///////////////////////////////////////////////////////////////////////
+        unsigned int FindFirstBitIs1(int num)
+        {
+        	int indexBit = 0;
+        	while (((num & 1) == 0) && (indexBit < 32))
+        	{
+    		num = num >> 1;
+        		++ indexBit;
+        	}
+        
+        	return indexBit;
+        }
+         
+        ///////////////////////////////////////////////////////////////////////
+        // Is the indexBit bit of num 1?
+        ///////////////////////////////////////////////////////////////////////
+        bool IsBit1(int num, unsigned int indexBit)
+        {
+        	num = num >> indexBit;
+        
+        	return (num & 1);
+        }
+        
+### 35.找出两个链表的第一个公共结点
+###### 题目：两个单向链表，找出它们的第一个公共结点。
+        链表的结点定义为：
+        struct ListNode
+        {
+        	int	      m_nKey;
+        	ListNode*   m_pNext;
+        };
+>分析：这是一道微软的面试题。微软非常喜欢与链表相关的题目，因此在微软的面试题中，链表出现的概率相当高。
+如果两个单向链表有公共的结点，也就是说两个链表从某一结点开始，它们的m_pNext都指向同一个结点。但由于是单向链表的结点，每个结点只有一个m_pNext，因此从第一个公共结点开始，之后它们所有结点都是重合的，不可能再出现分叉。所以，两个有公共结点而部分重合的链表，拓扑形状看起来像一个Y，而不可能像X。
+>>看到这个题目，第一反应就是蛮力法：在第一链表上顺序遍历每个结点。每遍历一个结点的时候，在第二个链表上顺序遍历每个结点。如果此时两个链表上的结点是一样的，说明此时两个链表重合，于是找到了它们的公共结点。如果第一个链表的长度为m，第二个链表的长度为n，显然，该方法的时间复杂度为O(mn)。
+接下来我们试着去寻找一个线性时间复杂度的算法。我们先把问题简化：如何判断两个单向链表有没有公共结点？前面已经提到，如果两个链表有一个公共结点，那么该公共结点之后的所有结点都是重合的。那么，它们的最后一个结点必然是重合的。因此，我们判断两个链表是不是有重合的部分，只要分别遍历两个链表到最后一个结点。如果两个尾结点是一样的，说明它们用重合；否则两个链表没有公共的结点。
+>>>在上面的思路中，顺序遍历两个链表到尾结点的时候，我们不能保证在两个链表上同时到达尾结点。这是因为两个链表不一定长度一样。但如果假设一个链表比另一个长l个结点，我们先在长的链表上遍历l个结点，之后再同步遍历，这个时候我们就能保证同时到达最后一个结点了。由于两个链表从第一个公共结点考试到链表的尾结点，这一部分是重合的。因此，它们肯定也是同时到达第一公共结点的。于是在遍历中，第一个相同的结点就是第一个公共的结点。
+在这个思路中，我们先要分别遍历两个链表得到它们的长度，并求出两个长度之差。在长的链表上先遍历若干次之后，再同步遍历两个链表，知道找到相同的结点，或者一直到链表结束。此时，如果第一个链表的长度为m，第二个链表的长度为n，该方法的时间复杂度为O(m+n)。
+
+-基于这个思路，我们不难写出如下的代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Find the first common node in the list with head pHead1 and 
+        // the list with head pHead2
+        // Input: pHead1 - the head of the first list
+        //        pHead2 - the head of the second list
+        // Return: the first common node in two list. If there is no common
+        //         nodes, return NULL
+        ///////////////////////////////////////////////////////////////////////
+        ListNode* FindFirstCommonNode( ListNode *pHead1, ListNode *pHead2)
+        {
+        	// Get the length of two lists
+        	unsigned int nLength1 = ListLength(pHead1);
+        	unsigned int nLength2 = ListLength(pHead2);
+        	int nLengthDif = nLength1 - nLength2;
+         
+        	// Get the longer list
+        	ListNode *pListHeadLong = pHead1;
+        	ListNode *pListHeadShort = pHead2;
+        	if(nLength2 > nLength1)
+        	{
+        		pListHeadLong = pHead2;
+        		pListHeadShort = pHead1;
+        		nLengthDif = nLength2 - nLength1;
+        	}
+         
+        	// Move on the longer list
+        	for(int i = 0; i < nLengthDif; ++ i)
+        		pListHeadLong = pListHeadLong->m_pNext;
+        
+        	// Move on both lists
+        	while((pListHeadLong != NULL) && 
+        		(pListHeadShort != NULL) &&
+        		(pListHeadLong != pListHeadShort))
+        	{
+        		pListHeadLong = pListHeadLong->m_pNext;
+        		pListHeadShort = pListHeadShort->m_pNext;
+        	}
+         
+        	// Get the first common node in two lists
+        	ListNode *pFisrtCommonNode = NULL;
+        	if(pListHeadLong == pListHeadShort)
+        		pFisrtCommonNode = pListHeadLong;
+        
+            	return pFisrtCommonNode;
+        }
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Get the length of list with head pHead
+        // Input: pHead - the head of list
+        // Return: the length of list
+        ///////////////////////////////////////////////////////////////////////
+        unsigned int ListLength(ListNode* pHead)
+        {
+        	unsigned int nLength = 0;
+        	ListNode* pNode = pHead;
+        	while(pNode != NULL)
+        	{
+        		++ nLength;
+        		pNode = pNode->m_pNext;
+    	}
+        
+        	return nLength;
+        }
+
+### 36.在字符串中删除特定的字符
+###### 题目：输入两个字符串，从第一字符串中删除第二个字符串中所有的字符。例如，输入”They are students.” 和”aeiou” ，则删除之后的第一个字符串变成”Thy r stdnts.” 。
+>分析：这是一道微软面试题。在微软的常见面试题中，与字符串相关的题目占了很大的一部分，因为写程序操作字符串能很好的反映我们的编程基本功。
+要编程完成这道题要求的功能可能并不难。毕竟，这道题的基本思路就是在第一个字符串中拿到一个字符，在第二个字符串中查找一下，看它是不是在第二个字符串中。如果在的话，就从第一个字符串中删除。但如何能够把效率优化到让人满意的程度，却也不是一件容易的事情。也就是说，如何在第一个字符串中删除一个字符，以及如何在第二字符串中查找一个字符，都是需要一些小技巧的。
+>>首先我们考虑如何在字符串中删除一个字符。由于字符串的内存分配方式是连续分配的。我们从字符串当中删除一个字符，需要把后面所有的字符往前移动一个字节的位置。但如果每次删除都需要移动字符串后面的字符的话，对于一个长度为n 的字符串而言，删除一个字符的时间复杂度为O(n) 。而对于本题而言，有可能要删除的字符的个数是n ，因此该方法就删除而言的时间复杂度为O(n2) 。
+>>>事实上，我们并不需要在每次删除一个字符的时候都去移动后面所有的字符。我们可以设想，当一个字符需要被删除的时候，我们把它所占的位置让它后面的字符来填补，也就相当于这个字符被删除了。在具体实现中，我们可以定义两个指针(pFast和pSlow)，初始的时候都指向第一字符的起始位置。当pFast指向的字符是需要删除的字符，则pFast直接跳过，指向下一个字符。如果pFast 指向的字符是不需要删除的字符，那么把pFast指向的字符赋值给pSlow指向的字符，并且pFast和pStart同时向后移动指向下一个字符。这样，前面被pFast跳过的字符相当于被删除了。用这种方法，整个删除在O(n)时间内就可以完成。接下来我们考虑如何在一个字符串中查找一个字符。当然，最简单的办法就是从头到尾扫描整个字符串。显然，这种方法需要一个循环，对于一个长度为n 的字符串，时间复杂度是O(n) 。
+>>>>由于字符的总数是有限的。对于八位的char型字符而言，总共只有28=256个字符。我们可以新建一个大小为256的数组，把所有元素都初始化为0。然后对于字符串中每一个字符，把它的ASCII码映射成索引，把数组中该索引对应的元素设为１。这个时候，要查找一个字符就变得很快了：根据这个字符的ASCII码，在数组中对应的下标找到该元素，如果为0，表示字符串中没有该字符，否则字符串中包含该字符。此时，查找一个字符的时间复杂度是O(1) 。其实，这个数组就是一个hash 表。这种思路的详细说明，详见 本面试题系列的第13 题 。
+
+- 基于上述分析，我们可以写出如下代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Delete all characters in pStrDelete from pStrSource
+        ///////////////////////////////////////////////////////////////////////
+        void DeleteChars(char* pStrSource, const char* pStrDelete)
+        {
+        	 if(NULL == pStrSource || NULL == pStrDelete)
+        		 return;
+                
+        	 // Initialize an array, the index in this array is ASCII value.
+        	 // All entries in the array, whose index is ASCII value of a
+        	 // character in the pStrDelete, will be set as 1.
+        	 // Otherwise, they will be set as 0.
+        	 const unsigned int nTableSize = 256;
+        	 int hashTable[nTableSize];
+        	 memset(hashTable, 0, sizeof(hashTable));
+     
+        	 const char* pTemp = pStrDelete;
+        	 while ('\0' != *pTemp)
+        	 {
+        		 hashTable[*pTemp] = 1;
+        		 ++ pTemp;
+        	 }
+        
+        	 char* pSlow = pStrSource;
+        	 char* pFast = pStrSource;
+        	 while ('\0' != *pFast)
+        	 {
+        		 // if the character is in pStrDelete, move both pStart and
+        		 // pEnd forward, and copy pEnd to pStart.
+        		 // Otherwise, move only pEnd forward, and the character
+        		 // pointed by pEnd is deleted
+        		 if(1 != hashTable[*pFast])
+        		 {
+        			 *pSlow = *pFast;
+              			 ++ pSlow;
+        		 }
+        
+        		 ++pFast;
+        	 }
+        
+        	 *pSlow = '\0';
+        }
+     
         

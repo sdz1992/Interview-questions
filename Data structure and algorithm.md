@@ -1410,3 +1410,1014 @@
         	return PowerNMinus2.m_00;
         }
 
+### 17.把字符串转换成整数
+###### 题目：输入一个表示整数的字符串，把该字符串转换成整数并输出。例如输入字符串"345"，则输出整数345。 
+> 分析：这道题尽管不是很难，学过C/C++语言一般都能实现基本功能，但不同程序员就这道题写出的代码有很大区别，可以说这道题能够很好地反应出程序员的思维和编程习惯，因此已经被包括微软在内的多家公司用作面试题。建议读者在往下看之前自己先编写代码，再比较自己写的代码和下面的参考代码有哪些不同。
+>>首先我们分析如何完成基本功能，即如何把表示整数的字符串正确地转换成整数。还是以"345"作为例子。当我们扫描到字符串的第一个字符'3'时，我们不知道后面还有多少位，仅仅知道这是第一位，因此此时得到的数字是3。当扫描到第二个数字'4'时，此时我们已经知道前面已经一个3了，再在后面加上一个数字4，那前面的3相当于30，因此得到的数字是3*10+4=34。接着我们又扫描到字符'5'，我们已经知道了'5'的前面已经有了34，由于后面要加上一个5，前面的34就相当于340了，因此得到的数字就是34*10+5=345。
+>>>分析到这里，我们不能得出一个转换的思路：每扫描到一个字符，我们把在之前得到的数字乘以10再加上当前字符表示的数字。这个思路用循环不难实现。
+由于整数可能不仅仅之含有数字，还有可能以'+'或者'-'开头，表示整数的正负。因此我们需要把这个字符串的第一个字符做特殊处理。如果第一个字符是'+'号，则不需要做任何操作；如果第一个字符是'-'号，则表明这个整数是个负数，在最后的时候我们要把得到的数值变成负数。
+>>>>接着我们试着处理非法输入。由于输入的是指针，在使用指针之前，我们要做的第一件是判断这个指针是不是为空。如果试着去访问空指针，将不可避免地导致程序崩溃。另外，输入的字符串中可能含有不是数字的字符。每当碰到这些非法的字符，我们就没有必要再继续转换。最后一个需要考虑的问题是溢出问题。由于输入的数字是以字符串的形式输入，因此有可能输入一个很大的数字转换之后会超过能够表示的最大的整数而溢出。
+>>>>>现在已经分析的差不多了，开始考虑编写代码。首先我们考虑如何声明这个函数。由于是把字符串转换成整数，很自然我们想到：
+int StrToInt(const char* str);
+这样声明看起来没有问题。但当输入的字符串是一个空指针或者含有非法的字符时，应该返回什么值呢？0怎么样？那怎么区分非法输入和字符串本身就是”0”这两种情况呢？
+>>>>>接下来我们考虑另外一种思路。我们可以返回一个布尔值来指示输入是否有效，而把转换后的整数放到参数列表中以引用或者指针的形式传入。于是我们就可以声明如下：
+bool StrToInt(const char *str, int& num);
+这种思路解决了前面的问题。但是这个函数的用户使用这个函数的时候会觉得不是很方便，因为他不能直接把得到的整数赋值给其他整形变脸，显得不够直观。
+>>>>>前面的第一种声明就很直观。如何在保证直观的前提下当碰到非法输入的时候通知用户呢？一种解决方案就是定义一个全局变量，每当碰到非法输入的时候，就标记该全局变量。用户在调用这个函数之后，就可以检验该全局变量来判断转换是不是成功。
+
+        下面我们写出完整的实现代码。参考代码：
+        enum Status {kValid = 0, kInvalid};
+        int g_nStatus = kValid;
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Convert a string into an integer
+        ///////////////////////////////////////////////////////////////////////
+        int StrToInt(const char* str)
+        {
+        	g_nStatus = kInvalid;
+              	longlongnum = 0;
+        
+        	if(str != NULL)
+        	{
+        		const char* digit = str;
+        
+        		// the first char in the string maybe '+' or '-'
+        		bool minus = false;
+        		if(*digit == '+')
+        			digit ++;
+        		else if(*digit == '-')
+        		{
+        			digit ++;
+        			minus = true;
+        		}
+        
+        		// the remaining chars in the string
+        		while(*digit != '\0')
+        		{
+        			if(*digit >= '0' && *digit <= '9')
+        			{
+        				num = num * 10 + (*digit - '0');
+        
+                                // overflow  
+                                			if(num>std::numeric_limits<int>::max())
+        {
+         num = 0;
+        break;
+        }
+        
+        digit++;
+        }
+        			// if the char is not a digit, invalid input
+        			else
+        			{
+        				num = 0;
+        				break;
+        			}
+        		}
+        
+        		if(*digit == '\0')
+        		{
+        			g_nStatus = kValid;
+        			if(minus)
+        				num = 0 - num;
+        		}
+        	}
+        
+             return static_cast<int>(num);
+        }
+>讨论：在参考代码中，我选用的是第一种声明方式。不过在面试时，我们可以选用任意一种声明方式进行实现。但当面试官问我们选择的理由时，我们要对两者的优缺点进行评价。第一种声明方式对用户而言非常直观，但使用了全局变量，不够优雅；而第二种思路是用返回值来表明输入是否合法，在很多API中都用这种方法，但该方法声明的函数使用起来不够直观。
+>>最后值得一提的是，在C语言提供的库函数中，函数atoi能够把字符串转换整数。它的声明是int atoi(const char *str)。该函数就是用一个全局变量来标志输入是否合法的。
+
+### 18.用两个栈实现队列
+###### 题目：某队列的声明如下：
+
+        template<typename T> class CQueue
+        {
+        public:
+        	CQueue() {}
+        	~CQueue() {}
+        	
+        	void appendTail(const T& node);  // append a element to tail
+        	void deleteHead();               // remove a element from head 
+        
+        private:
+        	T>m_stack1;
+        	T>m_stack2;
+        };
+         
+> 分析：从上面的类的声明中，我们发现在队列中有两个栈。因此这道题实质上是要求我们用两个栈来实现一个队列。相信大家对栈和队列的基本性质都非常了解了：栈是一种后入先出的数据容器，因此对队列进行的插入和删除操作都是在栈顶上进行；队列是一种先入先出的数据容器，我们总是把新元素插入到队列的尾部，而从队列的头部删除元素。
+>> 我们通过一个具体的例子来分析往该队列插入和删除元素的过程。首先插入一个元素a，不妨把先它插入到m_stack1。这个时候m_stack1中的元素有{a}，m_stack2为空。再插入两个元素b和c，还是插入到m_stack1中，此时m_stack1中的元素有{a,b,c}，m_stack2中仍然是空的。
+这个时候我们试着从队列中删除一个元素。按照队列先入先出的规则，由于a比b、c先插入到队列中，这次被删除的元素应该是a。元素a存储在m_stack1中，但并不在栈顶上，因此不能直接进行删除。注意到m_stack2我们还一直没有使用过，现在是让m_stack2起作用的时候了。如果我们把m_stack1中的元素逐个pop出来并push进入m_stack2，元素在m_stack2中的顺序正好和原来在m_stack1中的顺序相反。因此经过两次pop和push之后，m_stack1为空，而m_stack2中的元素是{c,b,a}。这个时候就可以pop出m_stack2的栈顶a了。pop之后的m_stack1为空，而m_stack2的元素为{c,b}，其中b在栈顶。
+>>>这个时候如果我们还想继续删除应该怎么办呢？在剩下的两个元素中b和c，b比c先进入队列，因此b应该先删除。而此时b恰好又在栈顶上，因此可以直接pop出去。这次pop之后，m_stack1中仍然为空，而m_stack2为{c}。
+>>>>从上面的分析我们可以总结出删除一个元素的步骤：当m_stack2中不为空时，在m_stack2中的栈顶元素是最先进入队列的元素，可以pop出去。如果m_stack2为空时，我们把m_stack1中的元素逐个pop出来并push进入m_stack2。由于先进入队列的元素被压到m_stack1的底端，经过pop和push之后就处于m_stack2的顶端了，又可以直接pop出去。
+>>>>>>接下来我们再插入一个元素d。我们是不是还可以把它push进m_stack1？这样会不会有问题呢？我们说不会有问题。因为在删除元素的时候，如果m_stack2中不为空，处于m_stack2中的栈顶元素是最先进入队列的，可以直接pop；如果m_stack2为空，我们把m_stack1中的元素pop出来并push进入m_stack2。由于m_stack2中元素的顺序和m_stack1相反，最先进入队列的元素还是处于m_stack2的栈顶，仍然可以直接pop。不会出现任何矛盾。
+
+        我们用一个表来总结一下前面的例子执行的步骤：
+        操作	m_stack1	m_stack2
+        append a	{a}	{}
+        append b	{a,b}	{}
+        append c	{a,b,c}	{}
+        delete head	{}	{b,c}
+        delete head	{}	{c}
+        append d	{d}	{c}
+        delete head	{d}	{}
+        
+- 总结完push和pop对应的过程之后，我们可以开始动手写代码了。参考代码如下：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Append a element at the tail of the queue
+        ///////////////////////////////////////////////////////////////////////
+        template<typename T> void CQueue<T>::appendTail(const T& element)
+        {
+        	// push the new element into m_stack1
+        	m_stack1.push(element);
+        } 
+        ///////////////////////////////////////////////////////////////////////
+        // Delete the head from the queue
+        ///////////////////////////////////////////////////////////////////////
+        template<typename T> void CQueue<T>::deleteHead()
+        {
+        	// if m_stack2is empty,and there are some
+        //elements inm_stack1, push them in m_stack2
+        if(m_stack2.size()<= 0)
+        {
+        while(m_stack1.size()>0)
+        {
+        T&data =m_stack1.top();
+        m_stack1.pop();
+        m_stack2.push(data);
+        }
+        }
+        
+        // push theelement into m_stack2
+        assert(m_stack2.size()>0);
+        m_stack2.pop();
+        }
+        
+>扩展：这道题是用两个栈实现一个队列。反过来能不能用两个队列实现一个栈？如果可以，该如何实现？
+
+### 19.反转链表
+###### 题目：输入一个链表的头结点，反转该链表，并返回反转后链表的头结点。链表结点定义如下：
+        struct ListNode
+        {
+        	int       m_nKey;
+        	ListNode* m_pNext;
+        };
+>分析：这是一道广为流传的微软面试题。由于这道题能够很好的反应出程序员思维是否严密，在微软之后已经有很多公司在面试时采用了这道题。
+为了正确地反转一个链表，需要调整指针的指向。与指针操作相关代码总是容易出错的，因此最好在动手写程序之前作全面的分析。在面试的时候不急于动手而是一开始做仔细的分析和设计，将会给面试官留下很好的印象，因为在实际的软件开发中，设计的时间总是比写代码的时间长。与其很快地写出一段漏洞百出的代码，远不如用较多的时间写出一段健壮的代码。
+>>为了将调整指针这个复杂的过程分析清楚，我们可以借助图形来直观地分析。假设下图中l、m和n是三个相邻的结点：
+aßbß…ßl  mànà…
+假设经过若干操作，我们已经把结点l之前的指针调整完毕，这些结点的m_pNext指针都指向前面一个结点。现在我们遍历到结点m。当然，我们需要把调整结点的m_pNext指针让它指向结点l。但注意一旦调整了指针的指向，链表就断开了，如下图所示：
+aßbß…lßm  nà…
+因为已经没有指针指向结点n，我们没有办法再遍历到结点n了。因此为了避免链表断开，我们需要在调整m的m_pNext之前要把n保存下来。
+>>>接下来我们试着找到反转后链表的头结点。不难分析出反转后链表的头结点是原始链表的尾位结点。什么结点是尾结点？就是m_pNext为空指针的结点。
+- 基于上述分析，我们不难写出如下代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Reverse a list iteratively
+        // Input: pHead - the head of the original list
+        // Output: the head of the reversed head
+        ///////////////////////////////////////////////////////////////////////
+        ListNode* ReverseIteratively(ListNode* pHead)
+        {
+        	ListNode* pReversedHead = NULL;
+        	ListNode* pNode = pHead;
+        	ListNode* pPrev = NULL;
+        	while(pNode != NULL)
+        	{
+        		// get the next node, and save it at pNext
+        		ListNode* pNext = pNode->m_pNext;
+        
+        		// if the next node is null, the currect is the end of original 
+        		// list, and it's the head of the reversed list
+        		if(pNext == NULL)
+        			pReversedHead = pNode;
+        
+        		// reverse the linkage between nodes
+        		pNode->m_pNext = pPrev;
+        
+        		// move forward on the the list
+        		pPrev = pNode;
+        		pNode = pNext;
+        	}
+        
+        	return pReversedHead;
+        }
+>扩展：本题也可以递归实现。
+
+### 20.最长公共子串
+###### 题目：如果字符串一的所有字符按其在字符串中的顺序出现在另外一个字符串二中，则字符串一称之为字符串二的子串。注意，并不要求子串（字符串一）的字符必须连续出现在字符串二中。请编写一个函数，输入两个字符串，求它们的最长公共子串，并打印出最长公共子串。 
+例如：输入两个字符串BDCABA和ABCBDAB，字符串BCBA和BDAB都是是它们的最长公共子串，则输出它们的长度4，并打印任意一个子串。
+>分析：求最长公共子串（Longest Common Subsequence, LCS）是一道非常经典的动态规划题，因此一些重视算法的公司像MicroStrategy都把它当作面试题。
+
+        先介绍LCS问题的性质：记Xm={x0,            x1,…xm-1}和Yn={y0,y1,…,yn-1}为两个字符串，而Zk={z0,z1,…zk-1}是它们的LCS，则：
+        1.       如果xm-1=yn-1，那么zk-1=xm-1=yn-1，并且Zk-1是Xm-1和Yn-1的LCS；
+        2.       如果xm-1≠yn-1，那么当zk-1≠xm-1时Z是Xm-1和Y的LCS；
+        3.       如果xm-1≠yn-1，那么当zk-1≠yn-1时Z是Yn-1和X的LCS；
+        下面简单证明一下这些性质：
+        1.       如果zk-1≠xm-1，那么我们可以把xm-1（yn-1）加到Z中得到Z’，这样就得到X和Y的一个长度为k+1的公共子串Z’。这就与长度为k的Z是X和Y的LCS相矛盾了。因此一定有zk-1=xm-1=yn-1。
+        既然zk-1=xm-1=yn-1，那如果我们删除zk-1（xm-1、yn-1）得到的Zk-1，Xm-1和Yn-1，显然Zk-1是Xm-1和Yn-1的一个公共子串，现在我们证明Zk-1是Xm-1和Yn-1的LCS。用反证法不难证明。假设有Xm-1和Yn-1有一个长度超过k-1的公共子串W，那么我们把加到W中得到W’，那W’就是X和Y的公共子串，并且长度超过k，这就和已知条件相矛盾了。
+        2.       还是用反证法证明。假设Z不是Xm-1和Y的LCS，则存在一个长度超过k的W是Xm-1和Y的LCS，那W肯定也X和Y的公共子串，而已知条件中X和Y的公共子串的最大长度为k。矛盾。
+        3.       证明同2。
+        有了上面的性质，我们可以得出如下的思路：求两字符串Xm={x0, x1,…xm-1}和Yn={y0,y1,…,yn-1}的LCS，如果xm-1=yn-1，那么只需求得Xm-1和Yn-1的LCS，并在其后添加xm-1（yn-1）即可；如果xm-1≠yn-1，我们分别求得Xm-1和Y的LCS和Yn-1和X的LCS，并且这两个LCS中较长的一个为X和Y的LCS。
+        如果我们记字符串Xi和Yj的LCS的长度为c[i,j]，我们可以递归地求c[i,j]：
+                  /      0                               if i<0 or j<0
+        c[i,j]=          c[i-1,j-1]+1                    if i,j>=0 and xi=xj
+                \       max(c[i,j-1],c[i-1,j]           if i,j>=0 and xi≠xj
+        上面的公式用递归函数不难求得。但从前面求Fibonacci第n项(本面试题系列第16题）的分析中我们知道直接递归会有很多重复计算，我们用从底向上循环求解的思路效率更高。
+>为了能够采用循环求解的思路，我们用一个矩阵（参考代码中的LCS_length）保存下来当前已经计算好了的c[i,j]，当后面的计算需要这些数据时就可以直接从矩阵读取。另外，求取c[i,j]可以从c[i-1,j-1] 、c[i,j-1]或者c[i-1,j]三个方向计算得到，相当于在矩阵LCS_length中是从c[i-1,j-1]，c[i,j-1]或者c[i-1,j]的某一个各自移动到c[i,j]，因此在矩阵中有三种不同的移动方向：向左、向上和向左上方，其中只有向左上方移动时才表明找到LCS中的一个字符。于是我们需要用另外一个矩阵（参考代码中的LCS_direction）保存移动的方向。
+
+- 参考代码如下：
+
+        #include "string.h"
+
+        // directions of LCS generation
+        enum decreaseDir {kInit = 0, kLeft, kUp, kLeftUp};
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Get the length of two strings' LCSs, and print one of the LCSs
+        // Input: pStr1         - the first string
+        //        pStr2         - the second string
+        // Output: the length of two strings' LCSs
+        ///////////////////////////////////////////////////////////////////////////
+        int LCS(char* pStr1, char* pStr2)
+        {
+        	if(!pStr1 || !pStr2)
+        		return 0;
+        	
+        size_t length1 = strlen(pStr1);
+        	size_t length2 = strlen(pStr2);
+        	if(!length1 || !length2)
+        		return 0;
+        	
+        size_t i, j;
+        	
+        // initiate the length matrix
+        	int **LCS_length;
+        	LCS_length = (int**)(new int[length1]);
+        	for(i = 0; i < length1; ++ i)
+        		LCS_length[i] = (int*)new int[length2];
+        
+        	for(i = 0; i < length1; ++ i)
+        		for(j = 0; j < length2; ++ j)
+        			LCS_length[i][j] = 0;
+        
+        	// initiate the direction matrix
+        	int **LCS_direction;
+        	LCS_direction = (int**)(new int[length1]);
+        	for( i = 0; i < length1; ++ i)
+        		LCS_direction[i] = (int*)new int[length2];
+        
+        	for(i = 0; i < length1; ++ i)
+        		for(j = 0; j < length2; ++ j)
+        			LCS_direction[i][j] = kInit;
+        
+        	for(i = 0; i < length1; ++ i)
+        	{
+        		for(j = 0; j < length2; ++ j)
+        		{
+        			if(i == 0 || j == 0)
+        			{
+        				if(pStr1[i] == pStr2[j])
+        				{
+        					LCS_length[i][j] = 1;
+        					LCS_direction[i][j] = kLeftUp;
+        				}
+        				else
+        					LCS_length[i][j] = 0;
+        			}
+        			// a char of LCS is found, 
+        			// it comes from the left up entry in the direction matrix
+        			else if(pStr1[i] == pStr2[j])
+        			{
+            				LCS_length[i][j] = LCS_length[i - 1][j - 1] + 1;
+        				LCS_direction[i][j] = kLeftUp;
+        			}
+        			// it comes from the up entry in the direction matrix
+        			else if(LCS_length[i - 1][j] > LCS_length[i][j - 1])
+        			{
+        				LCS_length[i][j] = LCS_length[i - 1][j];
+        				LCS_direction[i][j] = kUp;
+        			}
+        			// it comes from the left entry in the direction matrix
+        			else
+        			{
+        				LCS_length[i][j] = LCS_length[i][j - 1];
+        				LCS_direction[i][j] = kLeft;
+        			}
+        		}
+        	}
+        	LCS_Print(LCS_direction, pStr1, pStr2, length1 - 1, length2 - 1);
+        
+        	return LCS_length[length1 - 1][length2 - 1];
+        }
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Print a LCS for two strings
+        // Input: LCS_direction - a 2d matrix which records the direction of 
+        //                        LCS generation
+        //        pStr1         - the first string
+        //        pStr2         - the second string
+        //        row           - the row index in the matrix LCS_direction
+        //        col           - the column index in the matrix LCS_direction
+        ///////////////////////////////////////////////////////////////////////////
+        void LCS_Print(int **LCS_direction, 
+        			  char* pStr1, char* pStr2, 
+        			  size_t row, size_t col)
+        {
+        	if(pStr1 == NULL || pStr2 == NULL)
+        		return;
+        
+        	size_t length1 = strlen(pStr1);
+        	size_t length2 = strlen(pStr2);
+        	
+        if(length1 == 0 || length2 == 0 || !(row < length1 && col < length2))
+        		return;
+        
+        	// kLeftUp implies a char in the LCS is found
+        	if(LCS_direction[row][col] == kLeftUp)
+        	{
+        		if(row > 0 && col > 0)
+        			LCS_Print(LCS_direction, pStr1, pStr2, row - 1, col - 1);
+        		
+        // print the char
+        		printf("%c", pStr1[row]);
+        	}
+        	else if(LCS_direction[row][col] == kLeft)
+        	{
+        		// move to the left entry in the direction matrix
+        		if(col > 0)
+        			LCS_Print(LCS_direction, pStr1, pStr2, row, col - 1);
+        	}
+        	else if(LCS_direction[row][col] == kUp)
+        	{
+        		// move to the up entry in the direction matrix
+        		if(row > 0)
+        			LCS_Print(LCS_direction, pStr1, pStr2, row - 1, col);
+        	}
+        }
+>扩展：如果题目改成求两个字符串的最长公共子字符串，应该怎么求？子字符串的定义和子串的定义类似，但要求是连续分布在其他字符串中。比如输入两个字符串BDCABA和ABCBDAB的最长公共字符串有BD和AB，它们的长度都是2。
+
+### 21.－左旋转字符串
+###### 题目：定义字符串的左旋转操作：把字符串前面的若干个字符移动到字符串的尾部。如把字符串abcdef左旋转2位得到字符串cdefab。请实现字符串左旋转的函数。要求时间对长度为n的字符串操作的复杂度为O(n)，辅助内存为O(1)。
+>分析：如果不考虑时间和空间复杂度的限制，最简单的方法莫过于把这道题看成是把字符串分成前后两部分，通过旋转操作把这两个部分交换位置。于是我们可以新开辟一块长度为n+1的辅助空间，把原字符串后半部分拷贝到新空间的前半部分，在把原字符串的前半部分拷贝到新空间的后半部分。不难看出，这种思路的时间复杂度是O(n)，需要的辅助空间也是O(n)。
+>>接下来的一种思路可能要稍微麻烦一点。我们假设把字符串左旋转m位。于是我们先把第0个字符保存起来，把第m个字符放到第0个的位置，在把第2m个字符放到第m个的位置…依次类推，一直移动到最后一个可以移动字符，最后在把原来的第0个字符放到刚才移动的位置上。接着把第1个字符保存起来，把第m+1个元素移动到第1个位置…重复前面处理第0个字符的步骤，直到处理完前面的m个字符。
+>>>该思路还是比较容易理解，但当字符串的长度n不是m的整数倍的时候，写程序会有些麻烦，感兴趣的朋友可以自己试一下。由于下面还要介绍更好的方法，这种思路的代码我就不提供了。
+>>>>我们还是把字符串看成有两段组成的，记位XY。左旋转相当于要把字符串XY变成YX。我们先在字符串上定义一种翻转的操作，就是翻转字符串中字符的先后顺序。把X翻转后记为XT。显然有(XT)T=X。
+我们首先对X和Y两段分别进行翻转操作，这样就能得到XTYT。接着再对XTYT进行翻转操作，得到(XTYT)T=(YT)T(XT)T=YX。正好是我们期待的结果。
+分析到这里我们再回到原来的题目。我们要做的仅仅是把字符串分成两段，第一段为前面m个字符，其余的字符分到第二段。再定义一个翻转字符串的函数，按照前面的步骤翻转三次就行了。时间复杂度和空间复杂度都合乎要求。
+
+- 参考代码如下：
+
+        #include "string.h"
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Move the first n chars in a string to its end 
+        ///////////////////////////////////////////////////////////////////////
+        char* LeftRotateString(char* pStr, unsigned int n)
+        {
+        	if(pStr != NULL)
+        	{
+        		int nLength = static_cast<int>(strlen(pStr));
+        		if(nLength > 0 || n == 0 || n > nLength)
+        		{
+        			char* pFirstStart = pStr;
+        			char* pFirstEnd = pStr + n - 1;
+        			char* pSecondStart = pStr + n;
+        			char* pSecondEnd = pStr + nLength - 1;
+        
+        			// reverse the first part of the string
+        			ReverseString(pFirstStart, pFirstEnd);
+        			// reverse the second part of the strint
+        			ReverseString(pSecondStart, pSecondEnd);
+        			// reverse the whole string
+        			ReverseString(pFirstStart, pSecondEnd);
+        		}
+        	}
+        
+        	return pStr;
+        }
+        
+        ///////////////////////////////////////////////////////////////////////
+        // Reverse the string between pStart and pEnd
+        ///////////////////////////////////////////////////////////////////////
+        void ReverseString(char* pStart, char* pEnd)
+        {
+        	if(pStart == NULL || pEnd == NULL)
+        	{
+        		while(pStart <= pEnd)
+        		{
+        			char temp = *pStart;
+        			*pStart = *pEnd;
+        			*pEnd = temp;
+        
+        			pStart ++;
+        			pEnd --;
+        		}
+        	}
+        }
+
+### 22整数的二进制表示中1的个数
+###### 题目：输入一个整数，求该整数的二进制表达中有多少个1。例如输入10，由于其二进制表示为1010，有两个1，因此输出2。
+>分析：这是一道很基本的考查位运算的面试题。包括微软在内的很多公司都曾采用过这道题。
+一个很基本的想法是，我们先判断整数的最右边一位是不是1。接着把整数右移一位，原来处于右边第二位的数字现在被移到第一位了，再判断是不是1。这样每次移动一位，直到这个整数变成0为止。现在的问题变成怎样判断一个整数的最右边一位是不是1了。很简单，如果它和整数1作与运算。由于1除了最右边一位以外，其他所有位都为0。因此如果与运算的结果为1，表示整数的最右边一位是1，否则是0。
+
+        得到的代码如下：
+        ///////////////////////////////////////////////////////////////////////
+        // Get how many 1s in an integer's binary expression
+        ///////////////////////////////////////////////////////////////////////
+        int NumberOf1_Solution1(int i)
+        {
+            	int count = 0;
+        	while(i)
+        	{
+        		if(i & 1)
+        			count ++;
+        
+        		i = i >> 1;
+        	}
+        
+        	return count;
+        }
+>可能有读者会问，整数右移一位在数学上是和除以2是等价的。那可不可以把上面的代码中的右移运算符换成除以2呢？答案是最好不要换成除法。因为除法的效率比移位运算要低的多，在实际编程中如果可以应尽可能地用移位运算符代替乘除法。  
+>>这个思路当输入i是正数时没有问题，但当输入的i是一个负数时，不但不能得到正确的1的个数，还将导致死循环。以负数0x80000000为例，右移一位的时候，并不是简单地把最高位的1移到第二位变成0x40000000，而是0xC0000000。这是因为移位前是个负数，仍然要保证移位后是个负数，因此移位后的最高位会设为1。如果一直做右移运算，最终这个数字就会变成0xFFFFFFFF而陷入死循环。
+>>>为了避免死循环，我们可以不右移输入的数字i。首先i和1做与运算，判断i的最低位是不是为1。接着把1左移一位得到2，再和i做与运算，就能判断i的次高位是不是1……这样反复左移，每次都能判断i的其中一位是不是1。
+
+        基于此，我们得到如下代码：
+        ///////////////////////////////////////////////////////////////////////
+        // Get how many 1s in an integer's binary expression
+        ///////////////////////////////////////////////////////////////////////
+        int NumberOf1_Solution2(int i)
+        {
+        	int count = 0;
+        	unsigned int flag = 1;
+        	while(flag)
+        	{
+        		if(i & flag)
+        			count ++;
+        
+        		flag = flag << 1;
+        	}
+        
+        	return count;
+        }
+>另外一种思路是如果一个整数不为0，那么这个整数至少有一位是1。如果我们把这个整数减去1，那么原来处在整数最右边的1就会变成0，原来在1后面的所有的0都会变成1。其余的所有位将不受到影响。举个例子：一个二进制数1100，从右边数起的第三位是处于最右边的一个1。减去1后，第三位变成0，它后面的两位0变成1，而前面的1保持不变，因此得到结果是1011。
+我们发现减1的结果是把从最右边一个1开始的所有位都取反了。这个时候如果我们再把原来的整数和减去1之后的结果做与运算，从原来整数最右边一个1那一位开始所有位都会变成0。如1100&1011=1000。也就是说，把一个整数减去1，再和原整数做与运算，会把该整数最右边一个1变成0。那么一个整数的二进制有多少个1，就可以进行多少次这样的操作。
+
+        这种思路对应的代码如下：
+        ///////////////////////////////////////////////////////////////////////
+        // Get how many 1s in an integer's binary expression
+        ///////////////////////////////////////////////////////////////////////
+        int NumberOf1_Solution3(int i)
+        {
+        	int count = 0;
+        
+        	while (i)
+        	{
+        		++ count;
+        		i = (i - 1) & i;
+        	}
+        
+        	return count;
+        }
+
+### 23.跳台阶问题
+###### 题目：一个台阶总共有n级，如果一次可以跳1级，也可以跳2级。求总共有多少总跳法，并分析算法的时间复杂度。
+>分析：这道题最近经常出现，包括MicroStrategy等比较重视算法的公司都曾先后选用过个这道题作为面试题或者笔试题。
+首先我们考虑最简单的情况。如果只有1级台阶，那显然只有一种跳法。如果有2级台阶，那就有两种跳的方法了：一种是分两次跳，每次跳1级；另外一种就是一次跳2级。
+现在我们再来讨论一般情况。我们把n级台阶时的跳法看成是n的函数，记为f(n)。当n>2时，第一次跳的时候就有两种不同的选择：一是第一次只跳1级，此时跳法数目等于后面剩下的n-1级台阶的跳法数目，即为f(n-1)；另外一种选择是第一次跳2级，此时跳法数目等于后面剩下的n-2级台阶的跳法数目，即为f(n-2)。因此n级台阶时的不同跳法的总数f(n)=f(n-1)+(f-2)。
+
+        我们把上面的分析用一个公式总结如下：
+               /  1                          n=1
+        f(n)=      2                          n=2
+               \  f(n-1)+(f-2)               n>2
+>分析到这里，相信很多人都能看出这就是我们熟悉的Fibonacci序列。
+
+### 24.栈的push、pop序列
+###### 题目：输入两个整数序列。其中一个序列表示栈的push顺序，判断另一个序列有没有可能是对应的pop顺序。为了简单起见，我们假设push序列的任意两个整数都是不相等的。 
+比如输入的push序列是1、2、3、4、5，那么4、5、3、2、1就有可能是一个pop系列。因为可以有如下的push和pop序列：push 1，push 2，push 3，push 4，pop，push 5，pop，pop，pop，pop，这样得到的pop序列就是4、5、3、2、1。但序列4、3、5、1、2就不可能是push序列1、2、3、4、5的pop序列。
+>分析：这到题除了考查对栈这一基本数据结构的理解，还能考查我们的分析能力。
+这道题的一个很直观的想法就是建立一个辅助栈，每次push的时候就把一个整数push进入这个辅助栈，同样需要pop的时候就把该栈的栈顶整数pop出来。
+>>我们以前面的序列4、5、3、2、1为例。第一个希望被pop出来的数字是4，因此4需要先push到栈里面。由于push的顺序已经由push序列确定了，也就是在把4push进栈之前，数字1，2，3都需要push到栈里面。此时栈里的包含4个数字，分别是1，2，3，4，其中4位于栈顶。把4pop出栈后，剩下三个数字1，2，3。接下来希望被pop的是5，由于仍然不是栈顶数字，我们接着在push序列中4以后的数字中寻找。找到数字5后再一次push进栈，这个时候5就是位于栈顶，可以被pop出来。接下来希望被pop的三个数字是3，2，1。每次操作前都位于栈顶，直接pop即可。
+>>>再来看序列4、3、5、1、2。pop数字4的情况和前面一样。把4pop出来之后，3位于栈顶，直接pop。接下来希望pop的数字是5，由于5不是栈顶数字，我们到push序列中没有被push进栈的数字中去搜索该数字，幸运的时候能够找到5，于是把5push进入栈。此时pop5之后，栈内包含两个数字1、2，其中2位于栈顶。这个时候希望pop的数字是1，由于不是栈顶数字，我们需要到push序列中还没有被push进栈的数字中去搜索该数字。但此时push序列中所有数字都已被push进入栈，因此该序列不可能是一个pop序列。
+>>>>也就是说，如果我们希望pop的数字正好是栈顶数字，直接pop出栈即可；如果希望pop的数字目前不在栈顶，我们就到push序列中还没有被push到栈里的数字中去搜索这个数字，并把在它之前的所有数字都push进栈。如果所有的数字都被push进栈仍然没有找到这个数字，表明该序列不可能是一个pop序列。
+
+- 基于前面的分析，我们可以写出如下的参考代码：
+
+        #include <stack>
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Given a push order of a stack, determine whether an array is possible to         
+        // be its corresponding pop order
+        // Input: pPush   - an array of integers, the push order
+        //        pPop    - an array of integers, the pop order
+        //        nLength - the length of pPush and pPop
+        // Output: If pPop is possible to be the pop order of pPush, return true.
+        //         Otherwise return false
+        ///////////////////////////////////////////////////////////////////////////
+        bool IsPossiblePopOrder(const int* pPush, const int* pPop, int nLength)
+        {
+        	bool bPossible = false;
+        
+        	if(pPush && pPop && nLength > 0)
+        	{
+        		const int *pNextPush = pPush;
+        		const int *pNextPop = pPop;
+        
+        		// ancillary stack
+        		std::stack<int>stackData;
+            
+        		// check every integers in pPop
+        		while(pNextPop - pPop < nLength)
+        		{
+        			// while the top of the ancillary stack is not the integer 
+        			// to be poped, try to push some integers into the stack
+        			while(stackData.empty() || stackData.top() != *pNextPop)
+        			{
+        				// pNextPush == NULL means all integers have been 
+        				// pushed into the stack, can't push any longer
+        				if(!pNextPush)
+        					break;
+        
+        				stackData.push(*pNextPush);
+        
+        				// if there are integers left in pPush, move 
+        				// pNextPush forward, otherwise set it to be NULL
+        				if(pNextPush - pPush < nLength - 1)
+               					pNextPush ++;
+        				else
+        					pNextPush = NULL;
+        			}
+        
+        			// After pushing, the top of stack is still not same as 
+        			// pPextPop, pPextPop is not in a pop sequence
+        			// corresponding to pPush
+        			if(stackData.top() != *pNextPop)
+        				break;
+        
+        			// Check the next integer in pPop
+        			stackData.pop();
+        			pNextPop ++;
+        		}
+        
+        		// if all integers in pPop have been check successfully, 
+        		// pPop is a pop sequence corresponding to pPush 
+        		if(stackData.empty() && pNextPop - pPop == nLength)
+        			bPossible = true;
+        	}
+        
+        	return bPossible;
+        }
+
+### 25.在从1到n的正数中1出现的次数
+###### 题目：输入一个整数n，求从1到n这n个整数的十进制表示中1出现的次数。
+例如输入12，从1到12这些整数中包含1 的数字有1，10，11和12，1一共出现了5次。
+>分析：这是一道广为流传的google面试题。用最直观的方法求解并不是很难，但遗憾的是效率不是很高；而要得出一个效率较高的算法，需要比较强的分析能力，并不是件很容易的事情。当然，google的面试题中简单的也没有几道。
+>>首先我们来看最直观的方法，分别求得1到n中每个整数中1出现的次数。而求一个整数的十进制表示中1出现的次数，就和本面试题系列的第22题很相像了。我们每次判断整数的个位数字是不是1。如果这个数字大于10，除以10之后再判断个位数字是不是1。
+
+- 基于这个思路，不难写出如下的代码：
+
+        int NumberOf1(unsigned int n);
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Find the number of 1 in the integers between 1 and n
+        // Input: n - an integer
+        // Output: the number of 1 in the integers between 1 and n
+        ///////////////////////////////////////////////////////////////////////////
+        int NumberOf1BeforeBetween1AndN_Solution1(unsigned int n)
+        {
+        	int number = 0;
+        
+        	// Find the number of 1 in each integer between 1 and n
+        	for(unsigned int i = 1; i <= n; ++ i)
+        		number += NumberOf1(i);
+        
+        	return number;
+        }
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Find the number of 1 in an integer with radix 10
+        // Input: n - an integer
+        // Output: the number of 1 in n with radix
+        ///////////////////////////////////////////////////////////////////////////
+        int NumberOf1(unsigned int n)
+        {
+        	int number = 0;
+        	while(n)
+        	{
+        		if(n % 10 == 1)
+        			number ++;
+        
+        		n = n / 10;
+        	}
+        
+        	return number;
+        }
+>这个思路有一个非常明显的缺点就是每个数字都要计算1在该数字中出现的次数，因此时间复杂度是O(n)。当输入的n非常大的时候，需要大量的计算，运算效率很低。我们试着找出一些规律，来避免不必要的计算。
+>>我们用一个稍微大一点的数字21345作为例子来分析。我们把从1到21345的所有数字分成两段，即1-1235和1346-21345。
+先来看1346-21345中1出现的次数。1的出现分为两种情况：一种情况是1出现在最高位（万位）。从1到21345的数字中，1出现在10000-19999这10000个数字的万位中，一共出现了10000（104）次；另外一种情况是1出现在除了最高位之外的其他位中。例子中1346-21345，这20000个数字中后面四位中1出现的次数是2000次（2*103，其中2的第一位的数值，103是因为数字的后四位数字其中一位为1，其余的三位数字可以在0到9这10个数字任意选择，由排列组合可以得出总次数是2*103）。
+至于从1到1345的所有数字中1出现的次数，我们就可以用递归地求得了。这也是我们为什么要把1-21345分为1-1235和1346-21345两段的原因。因为把21345的最高位去掉就得到1345，便于我们采用递归的思路。
+>>>分析到这里还有一种特殊情况需要注意：前面我们举例子是最高位是一个比1大的数字，此时最高位1出现的次数104（对五位数而言）。但如果最高位是1呢？比如输入12345，从10000到12345这些数字中，1在万位出现的次数就不是104次，而是2346次了，也就是除去最高位数字之后剩下的数字再加上1。
+
+- 基于前面的分析，我们可以写出以下的代码。在参考代码中，为了编程方便，我把数字转换成字符串了。
+
+        #include "string.h"
+        #include "stdlib.h"
+        
+        int NumberOf1(const char* strN);
+        int PowerBase10(unsigned int n);
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Find the number of 1 in an integer with radix 10
+        // Input: n - an integer
+        // Output: the number of 1 in n with radix
+        ///////////////////////////////////////////////////////////////////////////
+        int NumberOf1BeforeBetween1AndN_Solution2(int n)
+        {
+        	if(n <= 0)
+		return 0;
+        
+        	// convert the integer into a string
+        	char strN[50];
+        	sprintf(strN, "%d", n);
+        
+        	return NumberOf1(strN);
+        }
+        ///////////////////////////////////////////////////////////////////////////
+        // Find the number of 1 in an integer with radix 10
+        // Input: strN - a string, which represents an integer
+        // Output: the number of 1 in n with radix
+        ///////////////////////////////////////////////////////////////////////////
+        int NumberOf1(const char* strN)
+        {
+        	if(!strN || *strN < '0' || *strN > '9' || *strN == '\0')
+        		return 0;
+        
+        	int firstDigit = *strN - '0';
+        	unsigned int length = static_cast<unsigned int>(strlen(strN));
+        
+        	// the integer contains only one digit
+        	if(length == 1 && firstDigit == 0)
+        		return 0;
+        
+        	if(length == 1 && firstDigit > 0)
+        		return 1;
+    
+        	// suppose the integer is 21345
+        	// numFirstDigit is the number of 1 of 10000-19999 due to the first digit
+        	int numFirstDigit = 0;
+        	// numOtherDigits is the number of 1 01346-21345 due to all digits
+        	// except the first one
+        	int numOtherDigits = firstDigit * (length - 1) * PowerBase10(length - 2);
+        	// numRecursive is the number of 1 of integer 1345
+        	int numRecursive = NumberOf1(strN + 1);
+        
+        	// if the first digit is greater than 1, suppose in integer 21345
+        	// number of 1 due to the first digit is 10^4. It's 10000-19999
+        	if(firstDigit > 1)
+        		numFirstDigit = PowerBase10(length - 1);
+        
+        	// if the first digit equals to 1, suppose in integer 12345
+        	// number of 1 due to the first digit is 2346. It's 10000-12345
+        	else if(firstDigit == 1)
+        		numFirstDigit = atoi(strN + 1) + 1;
+        
+        	return numFirstDigit + numOtherDigits + numRecursive;
+        }
+        
+        ///////////////////////////////////////////////////////////////////////////
+        // Calculate 10^n
+        ///////////////////////////////////////////////////////////////////////////
+        int PowerBase10(unsigned int n)
+        {
+        	int result = 1;
+        	for(unsigned int i = 0; i < n; ++ i)
+        		result *= 10;
+        
+        	return result;
+        }
+
+### 26.和为n连续正数序列
+###### 题目：输入一个正数n，输出所有和为n连续正数序列。
+例如输入15，由于1+2+3+4+5=4+5+6=7+8=15，所以输出3个连续序列1-5、4-6和7-8。
+>分析：这是网易的一道面试题。
+这道题和本面试题系列的第10题有些类似。我们用两个数small和big分别表示序列的最小值和最大值。首先把small初始化为1，big初始化为2。如果从small到big的序列的和大于n的话，我们向右移动small，相当于从序列中去掉较小的数字。如果从small到big的序列的和小于n的话，我们向右移动big，相当于向序列中添加big的下一个数字。一直到small等于(1+n)/2，因为序列至少要有两个数字。
+
+- 基于这个思路，我们可以写出如下代码：
+
+        void PrintContinuousSequence(int small, int big);
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Find continuous sequence, whose sum is n
+        /////////////////////////////////////////////////////////////////////////
+        void FindContinuousSequence(int n)
+        {
+        	if(n < 3)
+        		return;
+        
+        	int small = 1; 
+        	int big = 2;
+        	int middle = (1 + n) / 2;
+        	int sum = small + big;
+        
+        	while(small < middle)
+        	{
+          		// we are lucky and find the sequence
+        		if(sum == n)
+        			PrintContinuousSequence(small, big);
+
+        		// if the current sum is greater than n, 
+        		// move small forward
+        		while(sum > n)
+        		{
+        			sum -= small;
+        			small ++;
+        
+        			// we are lucky and find the sequence
+        			if(sum == n)
+        				PrintContinuousSequence(small, big);
+        		}
+    
+        		// move big forward
+        		big ++;
+        		sum += big;
+    	}
+        }
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Print continuous sequence between small and big
+        /////////////////////////////////////////////////////////////////////////
+        void PrintContinuousSequence(int small, int big)
+        {
+        	for(int i = small; i <= big; ++ i)
+        		printf("%d ", i);
+        
+        	printf("\n");
+        }
+
+### 27.二元树的深度
+###### 题目：输入一棵二元树的根结点，求该树的深度。从根结点到叶结点依次经过的结点（含根、叶结点）形成树的一条路径，最长路径的长度为树的深度。
+        例如：输入二元树：
+                                                   10
+                                                /     \
+                                               6        14
+                                             /         /   \
+                                            4         12     16
+        输出该树的深度3。
+        二元树的结点定义如下：
+        struct SBinaryTreeNode // a node of the binary tree
+        {
+        	int               m_nValue; // value of node
+        	SBinaryTreeNode  *m_pLeft;  // left child of node
+        	SBinaryTreeNode  *m_pRight; // right child of node
+        };
+>分析：这道题本质上还是考查二元树的遍历。
+题目给出了一种树的深度的定义。当然，我们可以按照这种定义去得到树的所有路径，也就能得到最长路径以及它的长度。只是这种思路用来写程序有点麻烦。
+我们还可以从另外一个角度来理解树的深度。如果一棵树只有一个结点，它的深度为1。如果根结点只有左子树而没有右子树，那么树的深度应该是其左子树的深度加1；同样如果根结点只有右子树而没有左子树，那么树的深度应该是其右子树的深度加1。如果既有右子树又有左子树呢？那该树的深度就是其左、右子树深度的较大值再加1。
+
+- 上面的这个思路用递归的方法很容易实现，只需要对遍历的代码稍作修改即可。参考代码如下：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Get depth of a binary tree
+        // Input: pTreeNode - the head of a binary tree
+        // Output: the depth of a binary tree
+        ///////////////////////////////////////////////////////////////////////
+        int TreeDepth(SBinaryTreeNode *pTreeNode)
+        {
+        	// the depth of a empty tree is 0
+        	if(!pTreeNode)
+        		return 0;
+        
+        	// the depth of left sub-tree
+        	int nLeft = TreeDepth(pTreeNode->m_pLeft);
+           	// the depth of right sub-tree
+        	int nRight = TreeDepth(pTreeNode->m_pRight);
+        
+        	// depth is the binary tree
+        	return (nLeft > nRight) ? (nLeft + 1) : (nRight + 1);
+        }
+
+### 28.字符串的排列
+###### 题目：输入一个字符串，打印出该字符串中字符的所有排列。例如输入字符串abc，则输出由字符a、b、c所能排列出来的所有字符串abc、acb、bac、bca、cab和cba。 
+>分析：这是一道很好的考查对递归理解的编程题，因此在过去一年中频繁出现在各大公司的面试、笔试题中。
+我们以三个字符abc为例来分析一下求字符串排列的过程。首先我们固定第一个字符a，求后面两个字符bc的排列。当两个字符bc的排列求好之后，我们把第一个字符a和后面的b交换，得到bac，接着我们固定第一个字符b，求后面两个字符ac的排列。现在是把c放到第一位置的时候了。记住前面我们已经把原先的第一个字符a和后面的b做了交换，为了保证这次c仍然是和原先处在第一位置的a交换，我们在拿c和第一个字符交换之前，先要把b和a交换回来。在交换b和a之后，再拿c和处在第一位置的a进行交换，得到cba。我们再次固定第一个字符c，求后面两个字符b、a的排列。
+既然我们已经知道怎么求三个字符的排列，那么固定第一个字符之后求后面两个字符的排列，就是典型的递归思路了。
+
+- 基于前面的分析，我们可以得到如下的参考代码：
+
+        void Permutation(char* pStr, char* pBegin);
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Get the permutation of a string, 
+        // for example, input string abc, its permutation is 
+        // abc acb bac bca cba cab
+        /////////////////////////////////////////////////////////////////////////
+        void Permutation(char* pStr)
+        {
+        	Permutation(pStr, pStr);
+        }
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Print the permutation of a string, 
+        // Input: pStr   - input string
+        //        pBegin - points to the begin char of string 
+        //                 which we want to permutate in this recursion
+        /////////////////////////////////////////////////////////////////////////
+        void Permutation(char* pStr, char* pBegin)
+        {
+        	if(!pStr || !pBegin)
+        		return;
+        
+        	// if pBegin points to the end of string,
+        	// this round of permutation is finished, 
+        	// print the permuted string
+        	if(*pBegin == '\0')
+        	{
+        		printf("%s\n", pStr);
+           	}
+            	// otherwise, permute string
+        	else
+        	{
+        		for(char* pCh = pBegin; *pCh != '\0'; ++ pCh)
+        		{
+        			// swap pCh and pBegin
+        			char temp = *pCh;
+        			*pCh = *pBegin;
+        			*pBegin = temp;
+        
+        			Permutation(pStr, pBegin + 1);
+        
+        			// restore pCh and pBegin
+        			temp = *pCh;
+        			*pCh = *pBegin;
+        			*pBegin = temp;
+        		}
+        	}
+        }
+>扩展1：如果不是求字符的所有排列，而是求字符的所有组合，应该怎么办呢？当输入的字符串中含有相同的字符串时，相同的字符交换位置是不同的排列，但是同一个组合。举个例子，如果输入aaa，那么它的排列是6个aaa，但对应的组合只有一个。
+扩展2：输入一个含有8个数字的数组，判断有没有可能把这8个数字分别放到正方体的8个顶点上，使得正方体上三组相对的面上的4个顶点的和相等。
+
+### 29.调整数组顺序使奇数位于偶数前面
+###### 题目：输入一个整数数组，调整数组中数字的顺序，使得所有奇数位于数组的前半部分，所有偶数位于数组的后半部分。要求时间复杂度为O(n)。
+>分析：如果不考虑时间复杂度，最简单的思路应该是从头扫描这个数组，每碰到一个偶数时，拿出这个数字，并把位于这个数字后面的所有数字往前挪动一位。挪完之后在数组的末尾有一个空位，这时把该偶数放入这个空位。由于碰到一个偶数，需要移动O(n)个数字，因此总的时间复杂度是O(n２)。
+要求的是把奇数放在数组的前半部分，偶数放在数组的后半部分，因此所有的奇数应该位于偶数的前面。也就是说我们在扫描这个数组的时候，如果发现有偶数出现在奇数的前面，我们可以交换他们的顺序，交换之后就符合要求了。
+因此我们可以维护两个指针，第一个指针初始化为数组的第一个数字，它只向后移动；第二个指针初始化为数组的最后一个数字，它只向前移动。在两个指针相遇之前，第一个指针总是位于第二个指针的前面。如果第一个指针指向的数字是偶数而第二个指针指向的数字是奇数，我们就交换这两个数字。
+
+- 基于这个思路，我们可以写出如下的代码：
+
+        void Reorder(int *pData, unsigned int length, bool (*func)(int));
+        bool isEven(int n);
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Devide an array of integers into two parts, odd in the first part,
+        // and even in the second part
+        // Input: pData  - an array of integers
+        //        length - the length of array
+        /////////////////////////////////////////////////////////////////////////
+        void ReorderOddEven(int *pData, unsigned int length)
+        {
+        	if(pData == NULL || length == 0)
+        		return;
+        
+        	Reorder(pData, length, isEven);
+        }
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Devide an array of integers into two parts, the intergers which 
+        // satisfy func in the first part, otherwise in the second part
+        // Input: pData  - an array of integers
+        //        length - the length of array
+        //        func   - a function
+        /////////////////////////////////////////////////////////////////////////
+        void Reorder(int *pData, unsigned int length, bool (*func)(int))
+        {
+        	if(pData == NULL || length == 0)
+        		return;
+        
+        	int *pBegin = pData;
+        	int *pEnd = pData + length - 1;
+        
+        	while(pBegin < pEnd)
+        	{
+        		// if *pBegin does not satisfy func, move forward
+        		if(!func(*pBegin))
+        		{
+        			pBegin ++;
+        			continue;
+        		}
+        
+        		// if *pEnd does not satisfy func, move backward
+        		if(func(*pEnd))
+        		{
+        			pEnd --;
+        			continue;
+        		}
+        
+        		// if *pBegin satisfy func while *pEnd does not,
+        		// swap these integers
+        		int temp = *pBegin;
+        		*pBegin = *pEnd;
+        		*pEnd = temp;
+        	}
+        }
+        
+        /////////////////////////////////////////////////////////////////////////
+        // Determine whether an integer is even or not
+        // Input: an integer
+        // otherwise return false
+        /////////////////////////////////////////////////////////////////////////
+        bool isEven(int n)
+        {
+        	return (n & 1) == 0;
+        }
+>讨论：
+上面的代码有三点值得提出来和大家讨论：
+１．函数isEven判断一个数字是不是偶数并没有用%运算符而是用&。理由是通常情况下位运算符比%要快一些；
+２．这道题有很多变种。这里要求是把奇数放在偶数的前面，如果把要求改成：把负数放在非负数的前面等，思路都是都一样的。
+３．在函数Reorder中，用函数指针func指向的函数来判断一个数字是不是符合给定的条件，而不是用在代码直接判断（hard code）。这样的好处是把调整顺序的算法和调整的标准分开了（即解耦，decouple）。当调整的标准改变时，Reorder的代码不需要修改，只需要提供一个新的确定调整标准的函数即可，提高了代码的可维护性。例如要求把负数放在非负数的前面，我们不需要修改Reorder的代码，只需添加一个函数来判断整数是不是非负数。这样的思路在很多库中都有广泛的应用，比如在ＳＴＬ的很多算法函数中都有一个仿函数（functor）的参数（当然仿函数不是函数指针，但其思想是一样的）。如果在面试中能够想到这一层，无疑能给面试官留下很好的印象。
+
+### 30.异常安全的赋值运算符重载函数
+###### 题目：类CMyString的声明如下：
+        class CMyString
+        {
+        public:
+        	CMyString(char* pData = NULL);
+        	CMyString(const CMyString& str);
+        	~CMyString(void);
+        	CMyString& operator = (const CMyString& str);
+
+        private:
+        	char* m_pData;
+        };
+        请实现其赋值运算符的重载函数，要求异常安全，即当对一个对象进行赋值时发生异常，对象的状态不能改变。
+>分析：
+
+        首先我们来看一般C++教科书上给出的赋值运算符的重载函数：
+        CMyString& CMyString::operator =(const CMyString &str)
+        {
+        	if(this == &str)
+        		return *this;
+        
+        	delete []m_pData;
+        	m_pData = NULL;
+        
+        	m_pData = new char[strlen(str.m_pData) + 1];
+        	strcpy(m_pData, str.m_pData);
+        
+        	return *this;
+        }
+>我们知道，在分配内存时有可能发生异常。当执行语句new char[strlen(str.m_pData) + 1]发生异常时，程序将从该赋值运算符的重载函数退出不再执行。注意到这个时候语句delete []m_pData已经执行了。也就是说赋值操作没有完成，但原来对象的状态已经改变。也就是说不满足题目的异常安全的要求。
+>>为了满足异常安全这个要求，一个简单的办法是掉换new、delete的顺序。先把内存new出来用一个临时指针保存起来，只有这个语句正常执行完成之后再执行delete。这样就能够保证异常安全了。
+
+- 下面给出的是一个更加优雅的实现方案：
+
+        CMyString& CMyString::operator =(const CMyString &str)
+        {
+        	if(this != &str)
+        	{
+        		CMyString strTemp(str);
+        
+        		char* pTemp = strTemp.m_pData;
+        		strTemp.m_pData = m_pData;
+        		m_pData = pTemp;
+        	}
+        
+        	return *this;
+        }
+>该方案通过调用构造拷贝函数创建一个临时对象来分配内存。此时即使发生异常，对原来对象的状态没有影响。交换临时对象和需要赋值的对象的字符串指针之后，由于临时对象的生命周期结束，自动调用其析构函数释放需赋值对象的原来的字符串空间。整个函数不需要显式用到new、delete，内存的分配和释放都自动完成，因此代码显得比较优雅。
+
+### 31.从尾到头输出链表
+###### 题目：输入一个链表的头结点，从尾到头反过来输出每个结点的值。链表结点定义如下：
+        struct ListNode
+        {
+        	int       m_nKey;
+        	ListNode* m_pNext;
+        };
+>分析：这是一道很有意思的面试题。该题以及它的变体经常出现在各大公司的面试、笔试题中。
+看到这道题后，第一反应是从头到尾输出比较简单。于是很自然地想到把链表中链接结点的指针反转过来，改变链表的方向。然后就可以从头到尾输出了。反转链表的算法详见本人面试题精选系列的第19题，在此不再细述。但该方法需要额外的操作，应该还有更好的方法。
+接下来的想法是从头到尾遍历链表，每经过一个结点的时候，把该结点放到一个栈中。当遍历完整个链表后，再从栈顶开始输出结点的值，此时输出的结点的顺序已经反转过来了。该方法需要维护一个额外的栈，实现起来比较麻烦。
+>>既然想到了栈来实现这个函数，而递归本质上就是一个栈结构。于是很自然的又想到了用递归来实现。要实现反过来输出链表，我们每访问到一个结点的时候，先递归输出它后面的结点，再输出该结点自身，这样链表的输出结果就反过来了。
+
+- 基于这样的思路，不难写出如下代码：
+
+        ///////////////////////////////////////////////////////////////////////
+        // Print a list from end to beginning
+        // Input: pListHead - the head of list
+        ///////////////////////////////////////////////////////////////////////
+        void PrintListReversely(ListNode* pListHead)
+        {
+        	if(pListHead != NULL)
+        	{
+        		// Print the next node first
+        		if (pListHead->m_pNext != NULL)
+        		{
+        			PrintListReversely(pListHead->m_pNext);
+        		}
+        
+        		// Print this node
+        		printf("%d", pListHead->m_nKey);
+        	}
+        }
+        
+        
+        

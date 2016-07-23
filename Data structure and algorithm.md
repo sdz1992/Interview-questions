@@ -2744,8 +2744,357 @@ aßbß…lßm  nà…
         
         	 *pSlow = '\0';
         }
-     
-  #IT公司笔试题算法部分
+ 
+ ### 37.删除字符串中的数字并压缩字符串。如字符串”abc123de4fg56”处理后变为”abcdefg”。注意空间和效率。
+        Also partition, keep non-digit stable.
+        char * partition(const char * str) {
+            char * i = str;  // i for cursor, j for the first digit char;
+            char * j = str;
+             while (*i != ‘\0’) {
+                if (*i > ‘9’ || *i < ‘0’) {
+                *j++ = *i++;
+                } else {
+                     *i++;
+                }
+            }
+              *j = ‘\0’;
+              return str;
+        }
+
+### 38.怎样编写一个程序，把一个有序整数数组放到二叉树中？
+>分析:本题考察二叉搜索树的建树方法，简单的递归结构。关于树的算法设计一定要联想到递归，因为树本身就是递归的定义。而，学会把递归改称非递归也是一种必要的技术。毕竟，递归会造成栈溢出，关于系统底层的程序中不到非不得以最好不要用。但是对某些数学问题，就一定要学会用递归去解决。
+
+        This is the first question I’m given in a google interview.
+        Node * array2Tree(int[] array) {
+          return helper(array, 0, n-1);
+        }
+        
+        Node * helper(int[] array, int start, int end) {
+          if (start > end) return NULL;
+          int m = start + (end-start)/2;
+          Node * root = new Node(array[m]);
+          root->left = helper(array, start, m-1);
+          root->right = helper(array, m+1, end);
+          return root;
+        }
+
+### 39.已知一个字符串，比如asderwsde,寻找其中的一个子字符串比如sde 的个数，如果没有返回0，有的话返回子字符串的个数。
+
+        int count_of_substr(const char* str, const char * sub) {
+          int count = 0;
+          char * p = str;
+          int n = strlen(sub);
+          while ( *p != ‘\0’ ) {
+            if (strncmp(p, sub, n) == 0) count ++;
+            p++;
+          }
+          return count;
+        }
+
+### 40.用C 语言实现函数void * memmove(void *dest, const void *src, size_t n)。memmove 函数的功能是拷贝src 所指的内存内容前n 个字节到dest 所指的地址上。
+>分析：由于可以把任何类型的指针赋给void类型的指针,这个函数主要是实现各种数据类型的拷贝。
+
+        void * memmove(void * dest, const void * src, size_t n) {
+          if (dest==NULL || src == NULL) error(“NULL pointers”);
+          byte * psrc = (byte*)src;
+          byte * pdest = (byte*)dest;
+          int step = 1;
+          if (dest < src + n) {
+            psrc = (byte*)(src+n-1);
+            pdest = (byte*)(dest+n-1);
+            step = -1;
+          }
+          for (int i=0; i<n; i++) {
+            pdest = psrc;
+            pdest += step; psrc += step;
+          }
+        }
+        
+### 41.数组中超过出现次数超过一半的数字
+###### 题目：数组中有一个数字出现的次数超过了数组长度的一半，找出这个数字。
+
+        int getMajor(int a[], int n) {
+          int x, cnt=0;
+          for (int i=0; i<n; i++) {
+            if (cnt == 0) { 
+              x = a[i]; cnt++;
+            } else if (a[i]==x) {
+              cnt ++;
+            } else {
+              cnt --;
+            }     
+          }
+          return x;
+        }  
+
+### 42.旋转数组中的最小元素。
+###### 题目：把一个数组最开始的若干个元素搬到数组的末尾，我们称之为数组的旋转。输入一个排好序的数组的一个旋转，输出旋转数组的最小元素。例如数组{3, 4, 5, 1, 2}为{1, 2, 3, 4, 5}的一个旋转，该数组的最小值为1。
+>分析：这道题最直观的解法并不难。从头到尾遍历数组一次，就能找出最小的元素，时间复杂度显然是O(N)。但这个思路没有利用输入数组的特性，我们应该能找到更好的解法。
+
+        int shiftedMinimum(int a[], int n) {
+          return helper(a, 0, n-1);
+        }
+        
+        int helper(int a[], int s, int t) {
+          if (s == t || a[s] < a[t]) return a[s];
+          int m = s + (t-s)/2;
+          if (a[s]>a[m]) return helper(a, s, m);
+         else return helper(a, m+1, t);
+        }
+
+### 43.把数组排成最小的数。
+###### 题目：输入一个正整数数组，将它们连接起来排成一个数，输出能排出的所有数字中最小的一个。例如输入数组{32,321}，则输出这两个能排成的最小数字32132。请给出解决问题的算法，并证明该算法。
+>分析：这是09 年6 月份百度的一道面试题，
+从这道题我们可以看出百度对应聘者在算法方面有很高的要求。
+
+        String smallestDigit(int a[]) {
+          Integer aux[] = new Integer[a.length];
+          for (int i=0; i<a.length; a++) aux[i] = a[i];
+          Arrays.sort(aux, new Comparator<Integer>(){
+            int compareTo(Integer i1, Integer i2) {
+              return (“”+i1+i2).compare(“”+i2+i1);
+            }
+          });
+          StringBuffer sb = new StringBuffer();
+         for (int i=0; i<aux.length, i++) {
+            sb.append(aux[i]);
+          }
+          return sb.toString();
+        }
+
+### 44.颠倒栈。
+###### 题目：用递归颠倒一个栈。例如输入栈{1, 2, 3, 4, 5}，1在栈顶。颠倒之后的栈为{5, 4, 3, 2, 1}，5 处在栈顶。
+
+        void reverse(Stack stack) {
+          if (stack.size() == 1) return;
+          Object o = stack.pop();
+          reverse(stack);
+          putToBottom(stack, o);
+        }
+        
+        void putToBottom(Stack stack, Object o) {
+          if (stack.isEmpty()) {
+            stack.push(o);
+            return;
+          }
+          Object o2 = stack.pop();
+          putToBottom(stack, o);
+          stack.push(o2);
+        }
+
+### 45.扑克牌的顺子
+###### 从扑克牌中随机抽5 张牌，判断是不是一个顺子，即这5 张牌是不是连续的。2-10 为数字本身，A 为1，J 为11，Q 为12，K 为13，而大小王可以看成任意数字。
+
+        // make king = 0
+        boolean isStraight(int a[]) {
+          Arrays.sort(a);
+          if (a[0] > 0) return checkGaps(a, 0, 4, 0);
+          if (a[0] == 0 && a[1] != 0) return checkGaps(a, 1, 4, 1);
+          return checkGaps(a, 2, 4, 2);
+        }
+        
+        boolean checkGaps(int []a, int s, int e, int allowGaps) {
+          int i=s;
+          while (i<e) {
+            allowGaps -= a[i+1] - a[i] - 1;
+            if (allowGaps < 0) return false;
+            i++;
+          }
+          return true;
+        }
+        
+### 46.n 个骰子的点数。把n 个骰子扔在地上，所有骰子朝上一面的点数之和为S。输入n，打印出S的所有可能的值出现的概率。
+
+        void listAllProbabilities(int n) {
+          int[][] f = new int[6*n+1][];
+          for (int i=0; i<=6*n; i++) {
+            f[i] = new int[n+1];
+              }
+          for (int i=1; i<=6; i++) {
+            f[i][1] = 1;
+          }
+          for (int i=1; i<=n; i++) {
+           f[i][i] = 1;
+          }
+          for (int i=2; i<=n; i++) {
+            for (int j=i+1; j<=6*i; j++) {
+              for (int k=(j-6<i-1)?i-1:j-6; k<j-1; k++)
+                f[j][i] += f[k][i-1];
+        }
+          }
+          double p6 = Math.power(6, n);
+          for (int i=n; i<=6*n; i++) {
+           System.out.println(“P(S=”+i+”)=”+((double)f[i][n] / p6));
+         }
+        }
+
+### 47.调整数组顺序使奇数位于偶数前面。
+###### 题目：输入一个整数数组，调整数组中数字的顺序，使得所有奇数位于数组的前半部分，所有偶数位于数组的后半部分。要求时间复杂度为O(n)。
+
+        void partition(int a[], int n) {
+         int i=j=0;
+          while (i < n && (a[i] & 1)==0) i++;
+          if (i==n) return;
+          swap(a, i++, j++);
+          while (i<n) {
+            if ((a[i] & 1) == 1) {
+              swap(a, i, j++);
+           }
+            i++; 
+          }
+        }
+
+### 48.求一个数组的最长递减子序列比如{9，4，3，2，5，4，3，2}的最长递减子序列为{9，5，4，3，2}
+
+        int[] findDecreasing(int[] a) {
+          int[] ds = new int[a.length];
+          Arrays.fill(ds, 0);
+          int dsl = 0;
+          int lastdsl = 0;
+          for (int i=0; i<a.length; i++) {
+            // binary search in ds to find the first element ds[j] smaller than a[i]. set ds[j] = a[i], or append a[i] at the end of ds
+            int s=0, t=dsl-1;
+            while (s<=t) {
+              int m = s+(t-s)/2;
+              if (ds[m] < a[i]) {
+                t = m - 1;
+              } else {
+                s = m + 1;
+              }
+            }
+            // now s must be at the first ds[j]<a[i], or at the end of ds[]
+                ds[s] = a[i];
+            if (s > dsl) { dsl = s; lastdsl = i; }
+          }
+          // now trace back.
+          for (int i=lastdsl-1, j=dsl-1; i>=0 && j >= 0; i--) {
+            if (a[i] == ds[j]) { j --; }
+            else if (a[i] < ds[j]) { ds[j--] = a[i]; }
+          }  
+          return Arrays.copyOfRange(ds, 0, dsl+1);
+        }
+
+### 49.一串首尾相连的珠子(m个)，有N种颜色(N<=10)，设计一个算法，取出其中一段，要求包含所有N 中颜色，并使长度最短。并分析时间复杂度与空间复杂度。
+
+        int shortestFullcolor(int a[], int n, int m) {
+          int c[m], ctr = m;
+          int h=0, t=0;
+          int min=n;
+          while (1) {
+             while (ctr > 0 && h<n) {
+               if (c[a[h]] == 0) ctr --;
+               c[a[h]] ++;
+               h++;
+             }
+             if (h>=n) return min;
+             while (1) {
+               c[a[t]] --;
+               if (c[a[t]] == 0) break;
+               t++;
+             }
+             if (min > h-t) min = h-t;
+             t++; ctr++;
+          }
+        }
+
+### 50.n 支队伍比赛，分别编号为0，1，2。。。。n-1，已知它们之间的实力对比关系，存储在一个二维数组w[n][n]中，w[i][j] 的值代表编号为i，j的队伍中更强的一支。所以w[i][j]=i 或者j，现在给出它们的出场顺序，并存储在数组order[n]中，比如order[n]={4,3,5,8,1......}，那么第一轮比赛就是4对3，5对8。.......胜者晋级，败者淘汰，同一轮淘汰的所有队伍排名不再细分，即可以随便排，下一轮由上一轮的胜者按照顺序，再依次两两比，比如可能是4对5,直至出现第一名编程实现，给出二维数组w，一维数组order和用于输出比赛名次的数组result[n]，求出result。
+
+        void knockOut(int **w, int order[], int result[], int n) {
+         int round = n;
+          memcpy(result, order, n*sizeof(int)); 
+          while (round>1) {
+            int i,j;
+            for (i=0,j=0; i<round; i+=2) {
+              int win= (i==round-1) ? i : w[i][i+1];
+              swap(result, j, win);
+              j++;
+            }
+          }
+        }
+
+###51.在从1 到n 的正数中1 出现的次数
+###### 题目：输入一个整数n，求从1到n这n个整数的十进制表示中1出现的次数。例如输入12，从1 到12 这些整数中包含1 的数字有1，10，11 和12，1 一共出现了5 次。
+
+        int countOf1s(int n) {
+          int prefix[10], suffix[10], digits[10]; //10 is enough for 32bit integers
+         int i=0;
+          int base = 1;
+          while (base < n) {
+           suffix[i] = n % base;
+           digit[i] = (n % (base * 10)) - suffix[i];
+           prefix[i] = (n - suffix[i] - digit[i]*base)/10;
+            i++, base*=10;
+          }
+          int count = 0;
+          base = 1;
+          for (int j=0; j<i; j++) {
+            if (digit[j] < 1) count += prefix;
+            else if (digit[j]==1) count += prefix + suffix + 1;
+            else count += prefix+base;
+            base *= 10;
+          }
+          return count;
+        }
+
+### 52.写一个函数,它的原形是int continumax(char *outputstr,char *intputstr)
+###### 功能：在字符串中找出连续最长的数字串，并把这个串的长度返回，并把这个最长数字串付给其中一个函数参数outputstr所指内存。例如："abcd12345ed125ss123456789"的首地址传给intputstr 后，函数将返回9，outputstr 所指的值为123456789
+
+        int continumax(char *outputstr, char *inputstr) {
+          int len = 0;
+          char * pstart = NULL;
+          int max = 0;
+          while (1) {
+            if (*inputstr >= ‘0’ && *inputstr <=’9’) {
+              len ++;
+            } else {
+              if (len > max) pstart = inputstr-len;
+              len = 0;
+            }
+            if (*inputstr++==’\0’) break;
+          }
+          for (int i=0; i<len; i++)
+           *outputstr++ = pstart++;
+          *outputstr = ‘\0’;
+          return max;
+        }
+
+### 53.编程求解：输入两个整数n 和m，从数列1，2，3.......n 中随意取几个数,使其和等于m ,要求将其中所有的可能组合列出来.
+
+        void findCombination(int n, int m) {
+          if (n>m) findCombination(m, m);
+          int aux[n];
+          memset(aux, 0, n*sizeof(int));
+          helper(m, 0, aux);
+        }
+        void helper(int dest, int idx, int aux[], int n) {
+          if (dest == 0) 
+           dump(aux, n);
+         if (dest <= 0 || idx==n) return;
+          helper(dest, idx+1, aux, n);
+          aux[idx] = 1;
+          helper(dest-idx-1, idx+1, aux, n);
+          aux[idx] = 0;
+        }
+        void dump(int aux[], int n) {
+          for (int i=0; i<n; i++) 
+            if (aux[i]) printf(“%3d”, i+1);
+          printf(“\n”);
+        }
+
+### 54.题目：输入一个已经按升序排序过的数组和一个数字，在数组中查找两个数，使得它们的和正好是输入的那个数字。要求时间复杂度是O(n)。如果有多对数字的和等于输入的数字，输出任意一对即可。例如输入数组1、2、4、7、11、15 和数字15。由于4+11=15，因此输出4 和11。
+
+        void find2Number(int a[], int n, int dest) {
+          int *f = a, *e=a+n-1;
+          int sum = *f + *e;
+          while (sum != dest && f < e) {
+            if (sum < dest) sum = *(++f);
+            else sum = *(--e);
+          }
+          if (sum == dest) printf(“%d, %d\n”, *f, *e);
+        }
+
+   
+# IT公司笔试题算法部分
 ### 1、将一整数逆序后放入一数组中（要求递归实现）
            void convert(int *result, int n)
         {
@@ -3968,6 +4317,15 @@ aßbß…lßm  nà…
                        }     
                 }     
         }     
+
+
+
+
+
+
+
+
+
       
 #难题
 ### 1.喝酒问题

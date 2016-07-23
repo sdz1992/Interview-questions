@@ -3549,7 +3549,87 @@ aßbß…lßm  nà…
        return getchar();
         }
  
- # 微软的22道数据结构算法面试题（含答案）
+### 27.给定一个单词a，如果通过交换单词中字母的顺序可以得到另外的单词b，那么定义b是a的兄弟单词，例如单词army和mary互为兄弟单词。现在给定一个字典，用户输入一个单词，如何根据字典找出这个单词有哪些兄弟单词？要求时间和空间效率尽可能的高。【2012年百度实习生招聘笔试题】
+>思路一：使用trie树。
+在字典树的前缀中再存储一个vector结构的容器：
+
+        struct word  
+        {    
+           vector<string> brother;    // 用于保存每个单词的兄弟单词  
+           word *next[26];     // 字典树中每个节点代表一个字符，并指向下一个字符  
+        };  
+>如上述数据结构所示，字典树的建立是在预处理阶段完成的，首先根据字典中的单词来建立字典树，建立的时候，需要稍微特殊处理一下，就是比如pots、stop和tops互为兄弟单词，那么在字典中按照首字母顺序的话，应该先遇到pots单词，那么我首先对其进行排序，结果是opts，那么字典树中就分别建立4个节点，分别为o->p->t->s，当然这个是不同层次的，在节点s处的vector容器brother中添加单词pots，遇到stop的时候，同样的方法，排序是opts，此时发现这4个节点已经建立了，那么只需要在第四个节点s处的vector容器brother中添加单词stop，tops单词的处理方法是同样的。
+>>这样建立完字典树后，查询兄弟单词的效率就会很高了，比哈希的效率还要高；查到tops的兄弟的单词的时候，首先排序，那么就是opts，然后在字典树中查找opts，在s处将其vector容器brother中的的单词输出就是tops的所有兄弟单词。
+>>>思路二：使用hash_map和链表。 
+首先定义一个key，使得兄弟单词有相同的key，不是兄弟的单词有不同的key。例如，将单词按字母从小到大重新排序后作为其key，比如bad的key为abd，good的key为dgoo。 
+使用链表将所有兄弟单词串在一起，hash_map的key为单词的key，value为链表的起始地址。 
+开始时，先遍历字典，将每个单词都按照key加入到对应的链表当中。当需要找兄弟单词时，只需求取这个单词的key，然后到hash_map中找到对应的链表即可。 
+这样创建hash_map时时间复杂度为O(n)，查找兄弟单词时时间复杂度是O(1)。
+>>思路三：同样使用hash_map和链表。
+将每一个字母对应一个质数，然后让对应的质数相乘，将得到的值进行hash，这样兄弟单词的值就是一样的了，并且不同单词的质数相乘积肯定不同。使用链表将所有兄弟单词串在一起，hash_map的key为单词的质数相乘积，value为链表的起始地址。对于用户输入的单词进行计算，然后查找hash，将链表遍历输出就得到所有兄弟单词。这样创建hash_map时时间复杂度为O(n)，查找兄弟单词时时间复杂度是O(1)。
+ 
+### 28. 数组al[0,mid-1]和al[mid,num-1]是各自有序的，对数组al[0,num-1]的两个子有序段进行merge，得到al[0,num-1]整体有序。要求空间复杂度为O(1)。注：al[i]元素是支持'<'运算符的。【2012年百度实习生招聘笔试题】
+- 本题如果没有空间复杂度为O(1)的限制，则比较简单，以下代码就可以搞定：
+
+        //两个有序数组的合并函数  
+             public static int[] MergeList(int a[],int b[])  
+             {  
+                int result[];    
+                result = new int[a.length+b.length];  
+                
+              int i=0,j=0,k=0;//i:用于标示a数组j：用来标示b数组k：用来标示传入的数组 
+                 while(i<a.length && j<b.length)  
+                     if(a[i] <= b[j]) {  
+                         result[k++] = a[i++];  
+                     }else{  
+                         result[k++] = b[j++];  
+                     }  
+        
+                 return result;  
+                }  
+            }  
+ 
+- 但是有了空间复杂度为O(1)的限制后，就不能新建result数组了。
+>方案：1、两个有序段位A和B，A在前，B紧接在A后面，找到A的第一个大于B[0]的数A[i]， A[0...i-1]相当于merge后的有效段，在B中找到第一个大于A[i]的数B[j]，对数组A[i...j-1]循环右移j-k位，使A[i...j-1]数组的前面部分有序。2、如此循环merge。3、循环右移通过先子段反转再整体反转的方式进行，复杂度是O(L), L是需要循环移动的子段的长度。
+
+        // 将有序数组a[begin...mid] 和 a[mid+1...end] 进行归并排序  
+        void Merge(int *a , int begin , int end )  
+        {  
+            int i , j , k;  
+            i = begin;  
+            j = 1 + ((begin + end)>>1);                //位运算的优先级比较低，外面需要加一个括号，刚开始忘记添加括号，导致错了很多次  
+            while(i <= end && j <= end && i<j)  
+            {  
+                while(i <= end && a[i] < a[j])  
+                    i++;  
+                k = j;   //暂时保存指针j的位置  
+                while(j <= end && a[j] < a[i])  
+                    j++;  
+                if(j > k)  
+                    RotateRight(a , i , j-1 , j-k);   //数组a[i...j-1]循环右移j-k次  
+           i += (j-k+1);//第一个指针往后移动，因为循环右移后，数组a[i....i+j-k]是有序的  
+            }  
+        }  
+          
+        void Reverse(int *a , int begin , int end )   //反转  
+        {  
+            for(; begin < end; begin++ , end--)  
+                swap(a[begin] , a[end]);  
+        }  
+        void RotateRight(int *a , int begin , int end , int k)    //循环右移  
+        {  
+            int len = end - begin + 1;  //数组的长度  
+            k %= len;  
+            Reverse(a , begin , end - k);  
+            Reverse(a , end - k + 1 , end);  
+            Reverse(a , begin , end);  
+        }  
+  
+### 29. 设计数据结构与算法，要求统计一篇英文文章中的所有单词出现的次数，按照这些单词出现的顺序依次打印它们以及各自出现的次数。【2012年阿里巴巴校招pretest】
+ 
+>思路：先将文章中的所有单词依次读入一个链表中，建立一个hash_map，然后从头遍历链表，若单词不存在于map中，则将该单词作为key，1(出现次数)为value插入map中；若该单词已存在于map中，则只需将其对应的value加1。最终再遍历一次链表，以每个单词为key在map中找到对应的value，即单词的出现次数，打印输出。
+ 
+# 微软的22道数据结构算法面试题（含答案）
 ### 1、反转一个链表。循环算法。   
          List   reverse(List   l)   {   
         if(!l)   return   l;   
